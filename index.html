@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickSwap - Smart Digital Contact Card</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- QR Code library via CDN (isse hum JS se QR generate karenge) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="logo">⚡ QuickSwap</div>
+      <p class="tagline">Share contacts instantly via QR or 1-Click Save</p>
+    </header>
+
+    <main class="main-content">
+      <!-- SECTION 1: Input Form (Yahan user apni details bharega) -->
+      <section class="form-card">
+        <h2>📝 Edit Your Profile</h2>
+        <form id="profile-form">
+          <div class="input-group">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" placeholder="e.g. Priyanshu Maurya" required>
+          </div>
+
+          <div class="input-group">
+            <label for="title">Title / Role</label>
+            <input type="text" id="title" placeholder="e.g. Frontend Developer">
+          </div>
+
+          <div class="input-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" placeholder="e.g. +91 9876543210" required>
+          </div>
+
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="e.g. priyanshu@example.com">
+          </div>
+
+          <div class="input-group">
+            <label for="whatsapp">WhatsApp (Number only)</label>
+            <input type="tel" id="whatsapp" placeholder="e.g. 919876543210">
+          </div>
+
+          <div class="input-group">
+            <label for="instagram">Instagram Username</label>
+            <input type="text" id="instagram" placeholder="e.g. your_username">
+          </div>
+
+          <div class="input-group">
+            <label for="linkedin">LinkedIn URL</label>
+            <input type="url" id="linkedin" placeholder="https://linkedin.com/in/username">
+          </div>
+
+          <button type="submit" id="save-btn" class="btn btn-primary">Save to Profile</button>
+        </form>
+      </section>
+
+      <!-- SECTION 2: Live Digital Card Preview -->
+      <section class="preview-section">
+        <h2>📱 Live Card Preview</h2>
+        <div class="card" id="digital-card">
+          <div class="card-header">
+            <div class="avatar" id="card-avatar">⚡</div>
+            <h3 id="card-name">Your Name</h3>
+            <p id="card-title">Your Title / Profession</p>
+          </div>
+
+          <div class="card-links" id="card-links">
+            <!-- JavaScript dynamically will insert clickable links here -->
+            <p class="empty-hint">Fill the form to see your card details</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="card-actions">
+            <button id="download-vcf-btn" class="btn btn-success">
+              📥 Save Contact to Phone (.vcf)
+            </button>
+            <button id="toggle-qr-btn" class="btn btn-secondary">
+              📱 Show QR Code
+            </button>
+          </div>
+
+          <!-- QR Code Modal / Container -->
+          <div class="qr-container" id="qr-container" style="display: none;">
+            <h4>Scan to View / Save</h4>
+            <div id="qrcode"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Hamari JavaScript file -->
+  <script src="app.js"></script>
+</body>
+</html>
