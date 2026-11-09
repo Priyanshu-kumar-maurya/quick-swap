@@ -5,108 +5,217 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuickSwap - Smart Digital Contact Card</title>
   <link rel="stylesheet" href="style.css">
-  <!-- QR Code library via CDN (isse hum JS se QR generate karenge) -->
+  <!-- QR Code generator library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
   <div class="app-container">
     <header class="header">
       <div class="logo">⚡ QuickSwap</div>
-      <p class="tagline">Share contacts instantly via QR or 1-Click Save</p>
+      <p class="tagline">Smart Contact Sharing with Custom Privacy Toggles</p>
+
+      <!-- Navigation Tabs -->
+      <nav class="tabs-nav">
+        <button id="tab-btn-profile" class="tab-btn active">
+          📝 1. My Master Profile
+        </button>
+        <button id="tab-btn-share" class="tab-btn">
+          ⚙️ 2. Share & Privacy QR
+        </button>
+      </nav>
     </header>
 
     <main class="main-content">
-      <!-- SECTION 1: Input Form (Yahan user apni details bharega) -->
-      <section class="form-card">
-        <h2>📝 Edit Your Profile</h2>
-        <form id="profile-form">
-          <!-- PHOTO UPLOAD INPUT -->
-          <div class="input-group">
-            <label for="avatar-input">Profile Photo</label>
-            <input type="file" id="avatar-input" accept="image/*">
-            <div class="photo-controls">
-              <small class="hint-text">Choose JPG, PNG or WebP</small>
-              <button type="button" id="remove-photo-btn" class="btn-text" style="display: none;">Remove Photo</button>
+      <!-- ============================================== -->
+      <!-- TAB 1: MASTER PROFILE FORM                     -->
+      <!-- ============================================== -->
+      <section id="profile-section" class="content-panel active-panel">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2>📝 Enter All Your Details Once</h2>
+            <p class="subtext">Fill in everything here. You can turn specific links ON or OFF when sharing.</p>
+          </div>
+
+          <form id="profile-form">
+            <div class="input-group">
+              <label for="avatar-input">Profile Photo</label>
+              <input type="file" id="avatar-input" accept="image/*">
+              <div class="photo-controls">
+                <small class="hint-text">Choose JPG, PNG or WebP</small>
+                <button type="button" id="remove-photo-btn" class="btn-text" style="display: none;">Remove Photo</button>
+              </div>
             </div>
-          </div>
 
-          <div class="input-group">
-            <label for="name">Full Name *</label>
-            <input type="text" id="name" placeholder="e.g. Priyanshu Maurya" required>
-          </div>
+            <div class="input-group">
+              <label for="name">Full Name *</label>
+              <input type="text" id="name" placeholder="e.g. Priyanshu Maurya" required>
+            </div>
 
-          <div class="input-group">
-            <label for="title">Title / Role</label>
-            <input type="text" id="title" placeholder="e.g. Frontend Developer">
-          </div>
+            <div class="input-group">
+              <label for="title">Title / Headline</label>
+              <input type="text" id="title" placeholder="e.g. Fullstack Developer / Freelancer">
+            </div>
 
-          <div class="input-group">
-            <label for="phone">Phone Number *</label>
-            <input type="tel" id="phone" placeholder="e.g. +91 9876543210" required>
-          </div>
+            <div class="input-group">
+              <label for="phone">Phone Number *</label>
+              <input type="tel" id="phone" placeholder="e.g. +91 9876543210" required>
+            </div>
 
-          <div class="input-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" placeholder="e.g. priyanshu@example.com">
-          </div>
+            <div class="input-group">
+              <label for="whatsapp">WhatsApp Number</label>
+              <input type="tel" id="whatsapp" placeholder="e.g. 919876543210">
+            </div>
 
-          <div class="input-group">
-            <label for="whatsapp">WhatsApp (Number only)</label>
-            <input type="tel" id="whatsapp" placeholder="e.g. 919876543210">
-          </div>
+            <div class="input-group">
+              <label for="instagram">Instagram Username</label>
+              <input type="text" id="instagram" placeholder="e.g. priyanshu_dev">
+            </div>
 
-          <div class="input-group">
-            <label for="instagram">Instagram Username</label>
-            <input type="text" id="instagram" placeholder="e.g. your_username">
-          </div>
+            <div class="input-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" placeholder="e.g. priyanshu@example.com">
+            </div>
 
-          <div class="input-group">
-            <label for="linkedin">LinkedIn URL</label>
-            <input type="url" id="linkedin" placeholder="https://linkedin.com/in/username">
-          </div>
+            <div class="input-group">
+              <label for="linkedin">LinkedIn URL</label>
+              <input type="url" id="linkedin" placeholder="https://linkedin.com/in/username">
+            </div>
 
-          <button type="submit" id="save-btn" class="btn btn-primary">Save to Profile</button>
-        </form>
+            <button type="submit" id="save-btn" class="btn btn-primary">
+              💾 Save Profile & Go to Share
+            </button>
+          </form>
+        </div>
       </section>
 
-      <!-- SECTION 2: Live Digital Card Preview -->
-      <section class="preview-section">
-        <h2>📱 Live Card Preview</h2>
-        <div class="card" id="digital-card">
-          <div class="card-header">
-            <div class="avatar" id="card-avatar">
-              <span id="avatar-fallback">⚡</span>
+      <!-- ============================================== -->
+      <!-- TAB 2: PRIVACY TOGGLES + QR & PREVIEW CARD      -->
+      <!-- ============================================== -->
+      <section id="share-section" class="content-panel">
+        <div class="share-grid">
+          
+          <!-- Column 1: ON/OFF Privacy Controls -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2>🎛️ Privacy Controls</h2>
+              <p class="subtext">Turn ON only what you want to share right now.</p>
             </div>
-            <h3 id="card-name">Your Name</h3>
-            <p id="card-title">Your Title / Profession</p>
+
+            <!-- Quick Preset Buttons -->
+            <div class="presets-row">
+              <button type="button" class="preset-pill" id="preset-all">Select All</button>
+              <button type="button" class="preset-pill" id="preset-social">Social Only</button>
+              <button type="button" class="preset-pill" id="preset-work">Work Only</button>
+            </div>
+
+            <!-- Toggle Switches List -->
+            <div class="toggles-list">
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-icon">📞</span>
+                  <div>
+                    <strong>Phone Number</strong>
+                    <p id="toggle-label-phone" class="toggle-value">Not set</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-phone" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-icon">💬</span>
+                  <div>
+                    <strong>WhatsApp</strong>
+                    <p id="toggle-label-whatsapp" class="toggle-value">Not set</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-whatsapp" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-icon">📸</span>
+                  <div>
+                    <strong>Instagram</strong>
+                    <p id="toggle-label-instagram" class="toggle-value">Not set</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-instagram" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-icon">✉️</span>
+                  <div>
+                    <strong>Email Address</strong>
+                    <p id="toggle-label-email" class="toggle-value">Not set</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-email" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-icon">💼</span>
+                  <div>
+                    <strong>LinkedIn</strong>
+                    <p id="toggle-label-linkedin" class="toggle-value">Not set</p>
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-linkedin" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div class="card-links" id="card-links">
-            <!-- JavaScript dynamically will insert clickable links here -->
-            <p class="empty-hint">Fill the form to see your card details</p>
+          <!-- Column 2: Live QR Code & Live Card -->
+          <div class="panel-card preview-column">
+            <!-- QR Code Box -->
+            <div class="qr-box">
+              <h3>📱 Scan to Get Details</h3>
+              <p class="subtext">Updates live according to your toggles</p>
+              <div id="qrcode" class="qr-display"></div>
+            </div>
+
+            <!-- Result Card Preview -->
+            <div class="card" id="digital-card">
+              <div class="card-header">
+                <div class="avatar" id="card-avatar">
+                  <span id="avatar-fallback">⚡</span>
+                </div>
+                <h3 id="card-name">Your Name</h3>
+                <p id="card-title">Your Title / Profession</p>
+              </div>
+
+              <div class="card-links" id="card-links">
+                <!-- Dynamic active links will show here -->
+              </div>
+
+              <button id="download-vcf-btn" class="btn btn-success">
+                📥 Download Contact (.vcf)
+              </button>
+            </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="card-actions">
-            <button id="download-vcf-btn" class="btn btn-success">
-              📥 Save Contact to Phone (.vcf)
-            </button>
-            <button id="toggle-qr-btn" class="btn btn-secondary">
-              📱 Show QR Code
-            </button>
-          </div>
-
-          <!-- QR Code Modal / Container -->
-          <div class="qr-container" id="qr-container" style="display: none;">
-            <h4>Scan to View / Save</h4>
-            <div id="qrcode"></div>
-          </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Hamari JavaScript file -->
   <script src="app.js"></script>
 </body>
 </html>

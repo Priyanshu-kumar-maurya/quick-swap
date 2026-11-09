@@ -1,257 +1,361 @@
 /**
- * ==========================================
- *  QUICKSWAP - JAVASCRIPT LEARNING PROJECT
- * ==========================================
- * Is file mein hum seekhenge:
- * 1. DOM Elements ko kaise select karte hain (document.getElementById)
- * 2. Events ko kaise sunte hain (addEventListener: 'input', 'change', 'click')
- * 3. FileReader API: Image file ko Base64 string mein convert karna
- * 4. Data ko Objects mein kaise store karte hain
- * 5. LocalStorage mein data kaise save/load karte hain
- * 6. JavaScript Blob se real .vcf contact file (with Photo!) download karwana
- * 7. QR Code dynamically generate karna
+ * =======================================================
+ *  QUICKSWAP - SMART CONTACT SHARING & PRIVACY CONTROLS
+ * =======================================================
+ * JavaScript Concepts:
+ * 1. Tab Switching (UI Navigation without page reloads)
+ * 2. Multi-state Management (userProfile + privacySettings)
+ * 3. Dynamic Filter Logic (Only sharing toggled-ON fields)
+ * 4. Real-time QR Code Re-generation on switch toggle
+ * 5. Dynamic vCard generation based on active switches
  */
 
 // ==========================================
-// STEP 1: DOM Elements ko Select Karna
+// 1. STATE MANAGEMENT
 // ==========================================
-const profileForm = document.getElementById('profile-form');
+let userProfile = {
+  avatar: '',
+  name: '',
+  title: '',
+  phone: '',
+  whatsapp: '',
+  instagram: '',
+  email: '',
+  linkedin: ''
+};
 
-// Form Input Fields
+// Har field ka ON/OFF switch status
+let privacySettings = {
+  phone: true,
+  whatsapp: true,
+  instagram: true,
+  email: true,
+  linkedin: true
+};
+
+let qrCodeInstance = null;
+
+// ==========================================
+// 2. DOM ELEMENTS SELECTION
+// ==========================================
+// Tabs
+const tabBtnProfile = document.getElementById('tab-btn-profile');
+const tabBtnShare = document.getElementById('tab-btn-share');
+const profileSection = document.getElementById('profile-section');
+const shareSection = document.getElementById('share-section');
+
+// Master Form
+const profileForm = document.getElementById('profile-form');
 const avatarInput = document.getElementById('avatar-input');
 const removePhotoBtn = document.getElementById('remove-photo-btn');
 const nameInput = document.getElementById('name');
 const titleInput = document.getElementById('title');
 const phoneInput = document.getElementById('phone');
-const emailInput = document.getElementById('email');
 const whatsappInput = document.getElementById('whatsapp');
 const instagramInput = document.getElementById('instagram');
+const emailInput = document.getElementById('email');
 const linkedinInput = document.getElementById('linkedin');
 
-// Preview Card Elements
+// Toggle Checkboxes
+const togglePhone = document.getElementById('toggle-phone');
+const toggleWhatsapp = document.getElementById('toggle-whatsapp');
+const toggleInstagram = document.getElementById('toggle-instagram');
+const toggleEmail = document.getElementById('toggle-email');
+const toggleLinkedin = document.getElementById('toggle-linkedin');
+
+// Toggle Sub-labels (To display the actual values)
+const labelPhone = document.getElementById('toggle-label-phone');
+const labelWhatsapp = document.getElementById('toggle-label-whatsapp');
+const labelInstagram = document.getElementById('toggle-label-instagram');
+const labelEmail = document.getElementById('toggle-label-email');
+const labelLinkedin = document.getElementById('toggle-label-linkedin');
+
+// Presets
+const presetAll = document.getElementById('preset-all');
+const presetSocial = document.getElementById('preset-social');
+const presetWork = document.getElementById('preset-work');
+
+// Card & QR Preview Elements
 const cardAvatar = document.getElementById('card-avatar');
 const cardName = document.getElementById('card-name');
 const cardTitle = document.getElementById('card-title');
 const cardLinks = document.getElementById('card-links');
-
-// Action Buttons & QR container
-const downloadVcfBtn = document.getElementById('download-vcf-btn');
-const toggleQrBtn = document.getElementById('toggle-qr-btn');
-const qrContainer = document.getElementById('qr-container');
 const qrcodeDiv = document.getElementById('qrcode');
-
-// Global variable QR Code instance ke liye
-let qrCodeInstance = null;
+const downloadVcfBtn = document.getElementById('download-vcf-btn');
 
 // ==========================================
-// STEP 2: State (User Profile Object)
+// 3. TAB NAVIGATION SYSTEM
 // ==========================================
-let userProfile = {
-  avatar: '', // Base64 image data URL yahan store hoga
-  name: '',
-  title: '',
-  phone: '',
-  email: '',
-  whatsapp: '',
-  instagram: '',
-  linkedin: ''
-};
-
-// ==========================================
-// STEP 3: Preview Card ko Update Karne ka Function
-// ==========================================
-function updateCardPreview() {
-  // 1. Avatar (Photo ya Initials)
-  if (userProfile.avatar) {
-    // Agar user ne photo chuni hai, toh image show karein
-    cardAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="Profile Photo">`;
-    if (removePhotoBtn) removePhotoBtn.style.display = 'inline-block';
+function switchTab(tab) {
+  if (tab === 'profile') {
+    tabBtnProfile.classList.add('active');
+    tabBtnShare.classList.remove('active');
+    profileSection.classList.add('active-panel');
+    shareSection.classList.remove('active-panel');
   } else {
-    // Fallback: Name ka first letter ya emoji
-    if (userProfile.name && userProfile.name.trim().length > 0) {
-      cardAvatar.textContent = userProfile.name.trim().charAt(0).toUpperCase();
-    } else {
-      cardAvatar.textContent = '⚡';
-    }
-    if (removePhotoBtn) removePhotoBtn.style.display = 'none';
-  }
+    tabBtnShare.classList.add('active');
+    tabBtnProfile.classList.remove('active');
+    shareSection.classList.add('active-panel');
+    profileSection.classList.remove('active-panel');
 
-  // 2. Name aur Title update karein
-  cardName.textContent = userProfile.name || 'Your Name';
-  cardTitle.textContent = userProfile.title || 'Your Title / Profession';
-
-  // 3. Links ko dynamically HTML mein generate karein
-  cardLinks.innerHTML = '';
-  let hasAnyLink = false;
-
-  // Phone Call Link
-  if (userProfile.phone) {
-    hasAnyLink = true;
-    cardLinks.innerHTML += `
-      <a href="tel:${userProfile.phone}" class="link-pill">
-        <span>📞 Phone</span>
-        <span>${userProfile.phone}</span>
-      </a>
-    `;
-  }
-
-  // WhatsApp Link
-  if (userProfile.whatsapp) {
-    hasAnyLink = true;
-    const cleanNumber = userProfile.whatsapp.replace(/[^0-9]/g, '');
-    cardLinks.innerHTML += `
-      <a href="https://wa.me/${cleanNumber}" target="_blank" class="link-pill">
-        <span>💬 WhatsApp</span>
-        <span>Chat</span>
-      </a>
-    `;
-  }
-
-  // Email Link
-  if (userProfile.email) {
-    hasAnyLink = true;
-    cardLinks.innerHTML += `
-      <a href="mailto:${userProfile.email}" class="link-pill">
-        <span>✉️ Email</span>
-        <span>${userProfile.email}</span>
-      </a>
-    `;
-  }
-
-  // Instagram Link
-  if (userProfile.instagram) {
-    hasAnyLink = true;
-    const cleanInsta = userProfile.instagram.replace('@', '').trim();
-    cardLinks.innerHTML += `
-      <a href="https://instagram.com/${cleanInsta}" target="_blank" class="link-pill">
-        <span>📸 Instagram</span>
-        <span>@${cleanInsta}</span>
-      </a>
-    `;
-  }
-
-  // LinkedIn Link
-  if (userProfile.linkedin) {
-    hasAnyLink = true;
-    cardLinks.innerHTML += `
-      <a href="${userProfile.linkedin}" target="_blank" class="link-pill">
-        <span>💼 LinkedIn</span>
-        <span>View Profile</span>
-      </a>
-    `;
-  }
-
-  if (!hasAnyLink) {
-    cardLinks.innerHTML = `<p class="empty-hint">Fill the form to see your card details</p>`;
+    // Tab 2 khulte hi QR code refresh karein
+    renderQrCode();
   }
 }
 
+tabBtnProfile.addEventListener('click', () => switchTab('profile'));
+tabBtnShare.addEventListener('click', () => switchTab('share'));
+
 // ==========================================
-// STEP 4: Photo Upload with FileReader API 📸
+// 4. PHOTO UPLOAD (FileReader API)
 // ==========================================
-// Jab user device se photo select karta hai ('change' event)
 avatarInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  // Size limit (2MB tak) taaki browser storage bhar na jaye
   if (file.size > 2 * 1024 * 1024) {
     alert('Please choose an image under 2MB.');
     avatarInput.value = '';
     return;
   }
 
-  // 1. FileReader object create karein
   const reader = new FileReader();
-
-  // 2. File read hone ke baad ye function chalega
   reader.onload = function(event) {
-    // event.target.result mein puri Base64 data string hoti hai
     userProfile.avatar = event.target.result;
-    updateCardPreview();
+    updateCardAndToggles();
   };
-
-  // 3. File ko Data URL (Base64) format mein read karna shuru karein
   reader.readAsDataURL(file);
 });
 
-// Photo remove karne ka button
 removePhotoBtn.addEventListener('click', () => {
   userProfile.avatar = '';
   avatarInput.value = '';
-  updateCardPreview();
+  updateCardAndToggles();
 });
 
 // ==========================================
-// STEP 5: Real-time Text Input Listeners 🪄
+// 5. MASTER FORM SUBMISSION
 // ==========================================
-const textInputs = [nameInput, titleInput, phoneInput, emailInput, whatsappInput, instagramInput, linkedinInput];
+profileForm.addEventListener('submit', (e) => {
+  e.preventDefault();
 
-textInputs.forEach(input => {
-  input.addEventListener('input', (e) => {
-    const fieldId = e.target.id;
-    userProfile[fieldId] = e.target.value;
-    updateCardPreview();
+  // Inputs se data read karein
+  userProfile.name = nameInput.value.trim();
+  userProfile.title = titleInput.value.trim();
+  userProfile.phone = phoneInput.value.trim();
+  userProfile.whatsapp = whatsappInput.value.trim();
+  userProfile.instagram = instagramInput.value.trim();
+  userProfile.email = emailInput.value.trim();
+  userProfile.linkedin = linkedinInput.value.trim();
+
+  // LocalStorage mein save karein
+  saveToLocalStorage();
+
+  // UI update karein aur user ko Share Tab par le jayein!
+  updateCardAndToggles();
+  switchTab('share');
+});
+
+// ==========================================
+// 6. TOGGLE SWITCH LISTENERS (Privacy Filters)
+// ==========================================
+const toggleMap = [
+  { checkbox: togglePhone, key: 'phone' },
+  { checkbox: toggleWhatsapp, key: 'whatsapp' },
+  { checkbox: toggleInstagram, key: 'instagram' },
+  { checkbox: toggleEmail, key: 'email' },
+  { checkbox: toggleLinkedin, key: 'linkedin' }
+];
+
+toggleMap.forEach(({ checkbox, key }) => {
+  checkbox.addEventListener('change', (e) => {
+    privacySettings[key] = e.target.checked;
+    saveToLocalStorage();
+    updateCardAndToggles();
+    renderQrCode();
   });
 });
 
 // ==========================================
-// STEP 6: Form Submit (Save to LocalStorage)
+// 7. PRESET BUTTONS (Quick Selection)
 // ==========================================
-profileForm.addEventListener('submit', (e) => {
-  e.preventDefault(); // Page reload hone se rokna
+function setAllToggles(phone, whatsapp, instagram, email, linkedin) {
+  privacySettings.phone = phone;
+  privacySettings.whatsapp = whatsapp;
+  privacySettings.instagram = instagram;
+  privacySettings.email = email;
+  privacySettings.linkedin = linkedin;
 
-  try {
-    // LocalStorage mein save karein
-    localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
-    alert('🎉 Profile details saved in browser storage!');
-  } catch (err) {
-    alert('Could not save to LocalStorage (Image might be too large).');
+  togglePhone.checked = phone;
+  toggleWhatsapp.checked = whatsapp;
+  toggleInstagram.checked = instagram;
+  toggleEmail.checked = email;
+  toggleLinkedin.checked = linkedin;
+
+  saveToLocalStorage();
+  updateCardAndToggles();
+  renderQrCode();
+}
+
+// Select All
+presetAll.addEventListener('click', () => setAllToggles(true, true, true, true, true));
+
+// Social Only (Insta, WhatsApp ON; Phone, Email, LinkedIn OFF)
+presetSocial.addEventListener('click', () => setAllToggles(false, true, true, false, false));
+
+// Work Only (Phone, Email, LinkedIn ON; Insta, WhatsApp OFF)
+presetWork.addEventListener('click', () => setAllToggles(true, false, false, true, true));
+
+// ==========================================
+// 8. CARD PREVIEW & TOGGLE LABELS UPDATE
+// ==========================================
+function updateCardAndToggles() {
+  // A. Toggle Labels update karein (User ka actual number/handle dikhayein)
+  labelPhone.textContent = userProfile.phone || 'Not set';
+  labelWhatsapp.textContent = userProfile.whatsapp || 'Not set';
+  labelInstagram.textContent = userProfile.instagram ? `@${userProfile.instagram.replace('@', '')}` : 'Not set';
+  labelEmail.textContent = userProfile.email || 'Not set';
+  labelLinkedin.textContent = userProfile.linkedin ? 'Configured' : 'Not set';
+
+  // Checkbox state synchronize karein
+  togglePhone.checked = privacySettings.phone;
+  toggleWhatsapp.checked = privacySettings.whatsapp;
+  toggleInstagram.checked = privacySettings.instagram;
+  toggleEmail.checked = privacySettings.email;
+  toggleLinkedin.checked = privacySettings.linkedin;
+
+  // B. Avatar
+  if (userProfile.avatar) {
+    cardAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="Photo">`;
+    removePhotoBtn.style.display = 'inline-block';
+  } else {
+    cardAvatar.textContent = userProfile.name ? userProfile.name.charAt(0).toUpperCase() : '⚡';
+    removePhotoBtn.style.display = 'none';
   }
-});
 
-// ==========================================
-// STEP 7: Page Load par Data Restore Karna
-// ==========================================
-function loadSavedProfile() {
-  const savedData = localStorage.getItem('quickswap_profile');
-  if (savedData) {
-    userProfile = JSON.parse(savedData);
+  // C. Name & Title
+  cardName.textContent = userProfile.name || 'Your Name';
+  cardTitle.textContent = userProfile.title || 'Your Title / Profession';
 
-    // Form fields ko bhar dein
-    nameInput.value = userProfile.name || '';
-    titleInput.value = userProfile.title || '';
-    phoneInput.value = userProfile.phone || '';
-    emailInput.value = userProfile.email || '';
-    whatsappInput.value = userProfile.whatsapp || '';
-    instagramInput.value = userProfile.instagram || '';
-    linkedinInput.value = userProfile.linkedin || '';
+  // D. Filtered Links (Sirf wahi link dikhega jo userProfile mein ho AUR switch ON ho!)
+  cardLinks.innerHTML = '';
+  let activeLinksCount = 0;
 
-    // Card update karein (Photo & Details)
-    updateCardPreview();
+  if (privacySettings.phone && userProfile.phone) {
+    activeLinksCount++;
+    cardLinks.innerHTML += `
+      <div class="link-pill">
+        <span>📞 Phone</span>
+        <strong>${userProfile.phone}</strong>
+      </div>`;
+  }
+
+  if (privacySettings.whatsapp && userProfile.whatsapp) {
+    activeLinksCount++;
+    const cleanWA = userProfile.whatsapp.replace(/[^0-9]/g, '');
+    cardLinks.innerHTML += `
+      <div class="link-pill">
+        <span>💬 WhatsApp</span>
+        <strong>+${cleanWA}</strong>
+      </div>`;
+  }
+
+  if (privacySettings.instagram && userProfile.instagram) {
+    activeLinksCount++;
+    const cleanInsta = userProfile.instagram.replace('@', '');
+    cardLinks.innerHTML += `
+      <div class="link-pill">
+        <span>📸 Instagram</span>
+        <strong>@${cleanInsta}</strong>
+      </div>`;
+  }
+
+  if (privacySettings.email && userProfile.email) {
+    activeLinksCount++;
+    cardLinks.innerHTML += `
+      <div class="link-pill">
+        <span>✉️ Email</span>
+        <strong>${userProfile.email}</strong>
+      </div>`;
+  }
+
+  if (privacySettings.linkedin && userProfile.linkedin) {
+    activeLinksCount++;
+    cardLinks.innerHTML += `
+      <div class="link-pill">
+        <span>💼 LinkedIn</span>
+        <strong>Connected</strong>
+      </div>`;
+  }
+
+  if (activeLinksCount === 0) {
+    cardLinks.innerHTML = `<p class="empty-hint">All items are turned OFF or empty. Turn on switches to share.</p>`;
   }
 }
 
 // ==========================================
-// STEP 8: vCard (.vcf) with Photo Support 📇
+// 9. DYNAMIC QR CODE ENGINE
+// ==========================================
+function renderQrCode() {
+  if (!qrcodeDiv) return;
+
+  // MECARD format sirf wahi values encode karega jo ON hain!
+  let qrData = `MECARD:N:${userProfile.name || 'User'};`;
+  
+  if (privacySettings.phone && userProfile.phone) {
+    qrData += `TEL:${userProfile.phone};`;
+  }
+  if (privacySettings.email && userProfile.email) {
+    qrData += `EMAIL:${userProfile.email};`;
+  }
+  if (privacySettings.whatsapp && userProfile.whatsapp) {
+    qrData += `NOTE:WhatsApp:wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')};`;
+  }
+  if (privacySettings.instagram && userProfile.instagram) {
+    qrData += `URL:https://instagram.com/${userProfile.instagram.replace('@', '')};`;
+  }
+  qrData += `;`;
+
+  qrcodeDiv.innerHTML = '';
+  qrCodeInstance = new QRCode(qrcodeDiv, {
+    text: qrData,
+    width: 170,
+    height: 170,
+    colorDark: '#0b1120',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// ==========================================
+// 10. DYNAMIC VCARD (.vcf) DOWNLOAD
 // ==========================================
 downloadVcfBtn.addEventListener('click', () => {
-  if (!userProfile.name || !userProfile.phone) {
-    alert('Please enter at least Name and Phone number to create contact!');
+  if (!userProfile.name) {
+    alert('Please enter your name first in Profile tab!');
     return;
   }
 
-  // Standard vCard 3.0 format
   let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
   vcard += `FN:${userProfile.name}\n`;
   if (userProfile.title) vcard += `TITLE:${userProfile.title}\n`;
-  if (userProfile.phone) vcard += `TEL;TYPE=CELL:${userProfile.phone}\n`;
-  if (userProfile.email) vcard += `EMAIL:${userProfile.email}\n`;
-  if (userProfile.whatsapp) vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')}\n`;
-  if (userProfile.instagram) vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${userProfile.instagram.replace('@', '')}\n`;
-  if (userProfile.linkedin) vcard += `URL:${userProfile.linkedin}\n`;
 
-  // Agar photo hai, toh vCard mein Base64 photo embed karein!
+  // Sirf ON wale contacts save honge!
+  if (privacySettings.phone && userProfile.phone) {
+    vcard += `TEL;TYPE=CELL:${userProfile.phone}\n`;
+  }
+  if (privacySettings.email && userProfile.email) {
+    vcard += `EMAIL:${userProfile.email}\n`;
+  }
+  if (privacySettings.whatsapp && userProfile.whatsapp) {
+    vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')}\n`;
+  }
+  if (privacySettings.instagram && userProfile.instagram) {
+    vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${userProfile.instagram.replace('@', '')}\n`;
+  }
+  if (privacySettings.linkedin && userProfile.linkedin) {
+    vcard += `URL:${userProfile.linkedin}\n`;
+  }
   if (userProfile.avatar && userProfile.avatar.includes('base64,')) {
     const base64Data = userProfile.avatar.split('base64,')[1];
     vcard += `PHOTO;ENCODING=b;TYPE=JPEG:${base64Data}\n`;
@@ -259,13 +363,11 @@ downloadVcfBtn.addEventListener('click', () => {
 
   vcard += `END:VCARD`;
 
-  // JavaScript Blob se download trigger karein
   const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-
   const downloadLink = document.createElement('a');
   downloadLink.href = url;
-  downloadLink.setAttribute('download', `${userProfile.name.replace(/\s+/g, '_')}_contact.vcf`);
+  downloadLink.setAttribute('download', `${(userProfile.name || 'contact').replace(/\s+/g, '_')}.vcf`);
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
@@ -273,31 +375,38 @@ downloadVcfBtn.addEventListener('click', () => {
 });
 
 // ==========================================
-// STEP 9: Dynamic QR Code Generator
+// 11. LOCALSTORAGE HELPER
 // ==========================================
-toggleQrBtn.addEventListener('click', () => {
-  if (qrContainer.style.display === 'none') {
-    qrContainer.style.display = 'flex';
-    toggleQrBtn.textContent = '❌ Hide QR Code';
-
-    // MECARD format contact data
-    let qrData = `MECARD:N:${userProfile.name || 'User'};TEL:${userProfile.phone || ''};EMAIL:${userProfile.email || ''};;`;
-
-    // Purana QR clean karke naya generate karein
-    qrcodeDiv.innerHTML = '';
-    qrCodeInstance = new QRCode(qrcodeDiv, {
-      text: qrData,
-      width: 180,
-      height: 180,
-      colorDark: '#0f172a',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-  } else {
-    qrContainer.style.display = 'none';
-    toggleQrBtn.textContent = '📱 Show QR Code';
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
+    localStorage.setItem('quickswap_privacy', JSON.stringify(privacySettings));
+  } catch (err) {
+    console.error('LocalStorage save error:', err);
   }
-});
+}
 
-// App initialize karein
-loadSavedProfile();
+function loadSavedData() {
+  const savedProfile = localStorage.getItem('quickswap_profile');
+  const savedPrivacy = localStorage.getItem('quickswap_privacy');
+
+  if (savedProfile) {
+    userProfile = JSON.parse(savedProfile);
+    nameInput.value = userProfile.name || '';
+    titleInput.value = userProfile.title || '';
+    phoneInput.value = userProfile.phone || '';
+    whatsappInput.value = userProfile.whatsapp || '';
+    instagramInput.value = userProfile.instagram || '';
+    emailInput.value = userProfile.email || '';
+    linkedinInput.value = userProfile.linkedin || '';
+  }
+
+  if (savedPrivacy) {
+    privacySettings = JSON.parse(savedPrivacy);
+  }
+
+  updateCardAndToggles();
+}
+
+// App Launch
+loadSavedData();
