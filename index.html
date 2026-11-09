@@ -20,6 +20,16 @@
       <section class="form-card">
         <h2>📝 Edit Your Profile</h2>
         <form id="profile-form">
+          <!-- PHOTO UPLOAD INPUT -->
+          <div class="input-group">
+            <label for="avatar-input">Profile Photo</label>
+            <input type="file" id="avatar-input" accept="image/*">
+            <div class="photo-controls">
+              <small class="hint-text">Choose JPG, PNG or WebP</small>
+              <button type="button" id="remove-photo-btn" class="btn-text" style="display: none;">Remove Photo</button>
+            </div>
+          </div>
+
           <div class="input-group">
             <label for="name">Full Name *</label>
             <input type="text" id="name" placeholder="e.g. Priyanshu Maurya" required>
@@ -64,7 +74,9 @@
         <h2>📱 Live Card Preview</h2>
         <div class="card" id="digital-card">
           <div class="card-header">
-            <div class="avatar" id="card-avatar">⚡</div>
+            <div class="avatar" id="card-avatar">
+              <span id="avatar-fallback">⚡</span>
+            </div>
             <h3 id="card-name">Your Name</h3>
             <p id="card-title">Your Title / Profession</p>
           </div>

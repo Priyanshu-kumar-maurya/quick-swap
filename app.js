@@ -4,11 +4,12 @@
  * ==========================================
  * Is file mein hum seekhenge:
  * 1. DOM Elements ko kaise select karte hain (document.getElementById)
- * 2. Events ko kaise sunte hain (addEventListener)
- * 3. Data ko Objects mein kaise store karte hain
- * 4. LocalStorage mein data kaise save/load karte hain
- * 5. JavaScript se real .vcf file (Contact) kaise generate hoti hai
- * 6. QR Code kaise dynamically generate karte hain
+ * 2. Events ko kaise sunte hain (addEventListener: 'input', 'change', 'click')
+ * 3. FileReader API: Image file ko Base64 string mein convert karna
+ * 4. Data ko Objects mein kaise store karte hain
+ * 5. LocalStorage mein data kaise save/load karte hain
+ * 6. JavaScript Blob se real .vcf contact file (with Photo!) download karwana
+ * 7. QR Code dynamically generate karna
  */
 
 // ==========================================
@@ -17,6 +18,8 @@
 const profileForm = document.getElementById('profile-form');
 
 // Form Input Fields
+const avatarInput = document.getElementById('avatar-input');
+const removePhotoBtn = document.getElementById('remove-photo-btn');
 const nameInput = document.getElementById('name');
 const titleInput = document.getElementById('title');
 const phoneInput = document.getElementById('phone');
@@ -26,10 +29,10 @@ const instagramInput = document.getElementById('instagram');
 const linkedinInput = document.getElementById('linkedin');
 
 // Preview Card Elements
+const cardAvatar = document.getElementById('card-avatar');
 const cardName = document.getElementById('card-name');
 const cardTitle = document.getElementById('card-title');
 const cardLinks = document.getElementById('card-links');
-const cardAvatar = document.getElementById('card-avatar');
 
 // Action Buttons & QR container
 const downloadVcfBtn = document.getElementById('download-vcf-btn');
@@ -41,10 +44,10 @@ const qrcodeDiv = document.getElementById('qrcode');
 let qrCodeInstance = null;
 
 // ==========================================
-// STEP 2: State (Data Object)
+// STEP 2: State (User Profile Object)
 // ==========================================
-// User ka saara data hum ek JavaScript Object mein rakhenge:
 let userProfile = {
+  avatar: '', // Base64 image data URL yahan store hoga
   name: '',
   title: '',
   phone: '',
@@ -58,16 +61,24 @@ let userProfile = {
 // STEP 3: Preview Card ko Update Karne ka Function
 // ==========================================
 function updateCardPreview() {
-  // 1. Name aur Title update karein
+  // 1. Avatar (Photo ya Initials)
+  if (userProfile.avatar) {
+    // Agar user ne photo chuni hai, toh image show karein
+    cardAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="Profile Photo">`;
+    if (removePhotoBtn) removePhotoBtn.style.display = 'inline-block';
+  } else {
+    // Fallback: Name ka first letter ya emoji
+    if (userProfile.name && userProfile.name.trim().length > 0) {
+      cardAvatar.textContent = userProfile.name.trim().charAt(0).toUpperCase();
+    } else {
+      cardAvatar.textContent = '⚡';
+    }
+    if (removePhotoBtn) removePhotoBtn.style.display = 'none';
+  }
+
+  // 2. Name aur Title update karein
   cardName.textContent = userProfile.name || 'Your Name';
   cardTitle.textContent = userProfile.title || 'Your Title / Profession';
-
-  // 2. Avatar ka pehla letter dikhayein
-  if (userProfile.name && userProfile.name.trim().length > 0) {
-    cardAvatar.textContent = userProfile.name.trim().charAt(0).toUpperCase();
-  } else {
-    cardAvatar.textContent = '⚡';
-  }
 
   // 3. Links ko dynamically HTML mein generate karein
   cardLinks.innerHTML = '';
@@ -136,12 +147,47 @@ function updateCardPreview() {
 }
 
 // ==========================================
-// STEP 4: Real-time Input Listeners (Magic 🪄)
+// STEP 4: Photo Upload with FileReader API 📸
 // ==========================================
-// Jaise hi user form mein kuch type karega, card live update hoga!
-const inputs = [nameInput, titleInput, phoneInput, emailInput, whatsappInput, instagramInput, linkedinInput];
+// Jab user device se photo select karta hai ('change' event)
+avatarInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-inputs.forEach(input => {
+  // Size limit (2MB tak) taaki browser storage bhar na jaye
+  if (file.size > 2 * 1024 * 1024) {
+    alert('Please choose an image under 2MB.');
+    avatarInput.value = '';
+    return;
+  }
+
+  // 1. FileReader object create karein
+  const reader = new FileReader();
+
+  // 2. File read hone ke baad ye function chalega
+  reader.onload = function(event) {
+    // event.target.result mein puri Base64 data string hoti hai
+    userProfile.avatar = event.target.result;
+    updateCardPreview();
+  };
+
+  // 3. File ko Data URL (Base64) format mein read karna shuru karein
+  reader.readAsDataURL(file);
+});
+
+// Photo remove karne ka button
+removePhotoBtn.addEventListener('click', () => {
+  userProfile.avatar = '';
+  avatarInput.value = '';
+  updateCardPreview();
+});
+
+// ==========================================
+// STEP 5: Real-time Text Input Listeners 🪄
+// ==========================================
+const textInputs = [nameInput, titleInput, phoneInput, emailInput, whatsappInput, instagramInput, linkedinInput];
+
+textInputs.forEach(input => {
   input.addEventListener('input', (e) => {
     const fieldId = e.target.id;
     userProfile[fieldId] = e.target.value;
@@ -150,23 +196,26 @@ inputs.forEach(input => {
 });
 
 // ==========================================
-// STEP 5: Form Submit (Save to LocalStorage)
+// STEP 6: Form Submit (Save to LocalStorage)
 // ==========================================
 profileForm.addEventListener('submit', (e) => {
-  e.preventDefault(); // Page refresh hone se rokna
+  e.preventDefault(); // Page reload hone se rokna
 
-  // LocalStorage mein save karein (Objects ko string mein convert karke)
-  localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
-  alert('🎉 Profile details saved in browser storage!');
+  try {
+    // LocalStorage mein save karein
+    localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
+    alert('🎉 Profile details saved in browser storage!');
+  } catch (err) {
+    alert('Could not save to LocalStorage (Image might be too large).');
+  }
 });
 
 // ==========================================
-// STEP 6: Page Load par Data Restore Karna
+// STEP 7: Page Load par Data Restore Karna
 // ==========================================
 function loadSavedProfile() {
   const savedData = localStorage.getItem('quickswap_profile');
   if (savedData) {
-    // String ko wapas Object mein convert karein
     userProfile = JSON.parse(savedData);
 
     // Form fields ko bhar dein
@@ -178,13 +227,13 @@ function loadSavedProfile() {
     instagramInput.value = userProfile.instagram || '';
     linkedinInput.value = userProfile.linkedin || '';
 
-    // Card update karein
+    // Card update karein (Photo & Details)
     updateCardPreview();
   }
 }
 
 // ==========================================
-// STEP 7: vCard (.vcf) File Generator (The Core Feature!)
+// STEP 8: vCard (.vcf) with Photo Support 📇
 // ==========================================
 downloadVcfBtn.addEventListener('click', () => {
   if (!userProfile.name || !userProfile.phone) {
@@ -192,7 +241,7 @@ downloadVcfBtn.addEventListener('click', () => {
     return;
   }
 
-  // Standard vCard 3.0 format text structure:
+  // Standard vCard 3.0 format
   let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
   vcard += `FN:${userProfile.name}\n`;
   if (userProfile.title) vcard += `TITLE:${userProfile.title}\n`;
@@ -201,13 +250,19 @@ downloadVcfBtn.addEventListener('click', () => {
   if (userProfile.whatsapp) vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')}\n`;
   if (userProfile.instagram) vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${userProfile.instagram.replace('@', '')}\n`;
   if (userProfile.linkedin) vcard += `URL:${userProfile.linkedin}\n`;
+
+  // Agar photo hai, toh vCard mein Base64 photo embed karein!
+  if (userProfile.avatar && userProfile.avatar.includes('base64,')) {
+    const base64Data = userProfile.avatar.split('base64,')[1];
+    vcard += `PHOTO;ENCODING=b;TYPE=JPEG:${base64Data}\n`;
+  }
+
   vcard += `END:VCARD`;
 
-  // JavaScript Blob: Text ko virtual file mein convert karna
+  // JavaScript Blob se download trigger karein
   const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
-  // Dynamic <a> tag banakar download trigger karna
   const downloadLink = document.createElement('a');
   downloadLink.href = url;
   downloadLink.setAttribute('download', `${userProfile.name.replace(/\s+/g, '_')}_contact.vcf`);
@@ -218,20 +273,18 @@ downloadVcfBtn.addEventListener('click', () => {
 });
 
 // ==========================================
-// STEP 8: QR Code Generator & Toggle
+// STEP 9: Dynamic QR Code Generator
 // ==========================================
 toggleQrBtn.addEventListener('click', () => {
   if (qrContainer.style.display === 'none') {
     qrContainer.style.display = 'flex';
     toggleQrBtn.textContent = '❌ Hide QR Code';
 
-    // QR Code mein contact details vCard format mein encode karna
+    // MECARD format contact data
     let qrData = `MECARD:N:${userProfile.name || 'User'};TEL:${userProfile.phone || ''};EMAIL:${userProfile.email || ''};;`;
 
-    // Purana QR clean karein
+    // Purana QR clean karke naya generate karein
     qrcodeDiv.innerHTML = '';
-
-    // Naya QR banayein using QRCode.js
     qrCodeInstance = new QRCode(qrcodeDiv, {
       text: qrData,
       width: 180,
@@ -246,5 +299,5 @@ toggleQrBtn.addEventListener('click', () => {
   }
 });
 
-// App initialize karein jab page load ho
+// App initialize karein
 loadSavedProfile();
