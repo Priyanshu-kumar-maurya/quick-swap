@@ -13,6 +13,7 @@
   --ios-green: #30d158;
   --ios-cyan: #64d2ff;
   --ios-purple: #bf5af2;
+  --ios-orange: #ff9f0a;
   --ios-red: #ff453a;
   
   --ios-text-primary: #ffffff;
@@ -69,7 +70,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 4px 14px 4px;
+  padding: 6px 4px 14px 4px;
 }
 
 .brand-group {
@@ -110,8 +111,8 @@ body {
 }
 
 .header-avatar-circle {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0a84ff, #bf5af2);
   display: flex;
@@ -119,10 +120,10 @@ body {
   justify-content: center;
   color: #ffffff;
   font-weight: 700;
-  font-size: 1.1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 1.15rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
   transition: transform 0.15s ease;
 }
 
@@ -145,7 +146,7 @@ body {
   backdrop-filter: blur(20px);
   padding: 3px;
   border-radius: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .segmented-tab {
@@ -187,13 +188,13 @@ body {
 }
 
 /* ========================================================
- * VIEW 1: PAYTM STYLE SCANNER FRAME & LASER
+ * VIEW 1: PAYTM CAMERA SCANNER
  * ======================================================== */
 .scanner-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .scanner-frame {
@@ -223,7 +224,7 @@ body {
   border-radius: 24px;
 }
 
-/* Animated Paytm-style Laser Beam */
+/* Animated Laser Beam */
 .laser-scanner {
   position: absolute;
   top: 0;
@@ -286,7 +287,6 @@ body {
   border-bottom-right-radius: 12px;
 }
 
-/* Scanner Actions */
 .scanner-actions {
   display: flex;
   gap: 12px;
@@ -322,22 +322,228 @@ body {
   color: var(--ios-text-secondary);
   font-size: 0.82rem;
   text-align: center;
-  margin-top: 18px;
-  max-width: 280px;
+  margin-top: 16px;
+  max-width: 290px;
   line-height: 1.4;
 }
 
 /* ========================================================
- * VIEW 2: NAMEDROP CARD & MY QR
+ * VIEW 2: MY QR CODE HUB (FOCUSED ON SHARING)
+ * ======================================================== */
+.mode-chips-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding: 2px 2px;
+}
+
+.mode-chip {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--ios-surface-grouped);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--ios-text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.mode-chip.active {
+  background: linear-gradient(135deg, #0a84ff, #0070df);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.4);
+}
+
+.ios-qr-sheet {
+  background: #ffffff;
+  border-radius: var(--ios-radius-lg);
+  padding: 24px 20px;
+  text-align: center;
+  color: #000000;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  margin-bottom: 20px;
+}
+
+.qr-sheet-header h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #000000;
+}
+
+.qr-sheet-header p {
+  font-size: 0.8rem;
+  color: #636366;
+  margin-top: 3px;
+  margin-bottom: 16px;
+}
+
+.qr-canvas-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 185px;
+}
+
+.qr-sheet-footer {
+  margin-top: 18px;
+}
+
+.profile-peek-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px;
+  text-align: center;
+}
+
+.profile-peek-box p {
+  font-size: 0.8rem;
+  color: var(--ios-text-secondary);
+  margin-bottom: 8px;
+}
+
+.ios-link-pill-btn {
+  background: var(--ios-surface-grouped);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ios-cyan);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.ios-link-pill-btn:active {
+  transform: scale(0.96);
+}
+
+/* ========================================================
+ * SLIDE-UP PROFILE DRAWER / SHEET
+ * ======================================================== */
+.sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet-overlay.active {
+  display: flex;
+  animation: fadeInOverlay 0.25s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sheet-modal {
+  background: #1c1c1e;
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  border-top-left-radius: 26px;
+  border-top-right-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.85);
+  animation: slideUpModal 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpModal {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-grabber {
+  width: 36px;
+  height: 4px;
+  background: #48484a;
+  border-radius: 2px;
+  margin: 10px auto 4px auto;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 0.5px solid var(--ios-separator);
+  min-height: 48px;
+}
+
+.sheet-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+}
+
+.sheet-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--ios-blue);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ios-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--ios-blue);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sheet-body {
+  padding: 16px 18px 34px 18px;
+  overflow-y: auto;
+}
+
+/* Subviews inside the sheet */
+.subview {
+  display: none;
+}
+
+.subview.active-subview {
+  display: block;
+  animation: subviewFade 0.25s ease;
+}
+
+@keyframes subviewFade {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ========================================================
+ * DIGITAL CARD PREVIEW (INSIDE PROFILE SHEET)
  * ======================================================== */
 .namedrop-card {
-  background: linear-gradient(175deg, rgba(28, 28, 32, 0.95) 0%, rgba(12, 12, 15, 0.98) 100%);
-  border-radius: 28px;
-  padding: 24px 20px;
+  background: linear-gradient(175deg, rgba(32, 32, 36, 0.98) 0%, rgba(14, 14, 17, 0.98) 100%);
+  border-radius: 24px;
+  padding: 24px 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   text-align: center;
-  margin-bottom: 20px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  margin-bottom: 20px;
 }
 
 .card-avatar-wrapper {
@@ -378,14 +584,14 @@ body {
   font-size: 0.86rem;
   color: var(--ios-text-secondary);
   margin-top: 2px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .card-links {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 4px;
 }
 
 .ios-link-pill {
@@ -393,10 +599,16 @@ body {
   align-items: center;
   justify-content: space-between;
   background: rgba(255, 255, 255, 0.08);
-  padding: 9px 14px;
+  padding: 10px 14px;
   border-radius: 12px;
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .ios-action-btn {
@@ -418,255 +630,26 @@ body {
   transform: scale(0.98);
 }
 
+.primary-action {
+  background: var(--ios-blue);
+  color: white;
+}
+
+.secondary-action {
+  background: var(--ios-surface-secondary);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .apple-save-btn {
   background: var(--ios-green);
   color: #000000;
   font-weight: 700;
 }
 
-.primary-action {
-  background: var(--ios-blue);
-  color: white;
-  margin-top: 15px;
-}
-
-/* QR Sheet */
-.ios-qr-sheet {
-  background: #ffffff;
-  border-radius: var(--ios-radius-lg);
-  padding: 20px;
-  text-align: center;
-  color: #000000;
-  margin-bottom: 22px;
-}
-
-.qr-sheet-header h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #000000;
-}
-
-.qr-sheet-header p {
-  font-size: 0.78rem;
-  color: #636366;
-  margin-top: 2px;
-  margin-bottom: 12px;
-}
-
-.qr-canvas-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 175px;
-}
-
-/* Privacy Controls */
-.ios-section-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  color: var(--ios-text-secondary);
-  margin-left: 14px;
-  margin-bottom: 6px;
-  margin-top: 16px;
-}
-
-.preset-segmented {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.preset-chip {
-  flex: 1;
-  padding: 6px 10px;
-  background: var(--ios-surface-grouped);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--ios-text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: 20px;
-  cursor: pointer;
-}
-
-.ios-inset-group {
-  background: var(--ios-surface-grouped);
-  border-radius: var(--ios-radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-}
-
-.ios-switch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 0.5px solid var(--ios-separator);
-}
-
-.ios-switch-row:last-child {
-  border-bottom: none;
-}
-
-.switch-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.meta-icon {
-  font-size: 1.25rem;
-  width: 24px;
-  text-align: center;
-}
-
-.meta-title {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.meta-subtitle {
-  display: block;
-  font-size: 0.74rem;
-  color: var(--ios-text-secondary);
-  max-width: 190px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* iOS Switch */
-.ios-switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 28px;
-  flex-shrink: 0;
-}
-
-.ios-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.ios-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #39393d;
-  transition: 0.25s ease;
-  border-radius: 28px;
-}
-
-.ios-slider:before {
-  position: absolute;
-  content: "";
-  height: 24px;
-  width: 24px;
-  left: 2px;
-  bottom: 2px;
-  background-color: #ffffff;
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.ios-switch input:checked + .ios-slider {
-  background-color: var(--ios-green);
-}
-
-.ios-switch input:checked + .ios-slider:before {
-  transform: translateX(20px);
-}
-
 /* ========================================================
- * SLIDE-UP PROFILE DRAWER / SHEET
+ * FORM & INPUTS (SUBVIEW 2)
  * ======================================================== */
-.sheet-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(10px);
-  z-index: 100;
-  display: none;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.sheet-overlay.active {
-  display: flex;
-  animation: fadeInOverlay 0.25s ease;
-}
-
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.sheet-modal {
-  background: #1c1c1e;
-  width: 100%;
-  max-width: 460px;
-  max-height: 90vh;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
-  animation: slideUpModal 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUpModal {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.sheet-grabber {
-  width: 36px;
-  height: 4px;
-  background: #48484a;
-  border-radius: 2px;
-  margin: 10px auto 4px auto;
-}
-
-.sheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-bottom: 0.5px solid var(--ios-separator);
-}
-
-.sheet-header h2 {
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.ios-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--ios-blue);
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.sheet-body {
-  padding: 16px 18px 30px 18px;
-  overflow-y: auto;
-}
-
-/* Avatar edit inside sheet */
 .ios-avatar-section {
   text-align: center;
   margin-bottom: 16px;
@@ -724,6 +707,23 @@ body {
   cursor: pointer;
 }
 
+.ios-section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--ios-text-secondary);
+  margin-left: 14px;
+  margin-bottom: 6px;
+  margin-top: 16px;
+}
+
+.ios-inset-group {
+  background: var(--ios-surface-grouped);
+  border-radius: var(--ios-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
 .ios-row {
   display: flex;
   align-items: center;
@@ -753,12 +753,12 @@ body {
   height: 46px;
 }
 
-/* Custom Links Header & Add Button */
+/* Custom Links Header */
 .custom-links-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 18px;
+  margin-top: 16px;
   margin-bottom: 6px;
   padding: 0 4px;
 }
@@ -783,7 +783,7 @@ body {
 }
 
 .custom-label-input {
-  width: 32% !important;
+  width: 34% !important;
   color: var(--ios-blue) !important;
   font-weight: 600;
 }
@@ -794,7 +794,70 @@ body {
   color: var(--ios-red);
   font-size: 1.1rem;
   cursor: pointer;
-  padding: 0 4px;
+}
+
+/* ========================================================
+ * MODE CONFIGURATION CHECKBOXES (SUBVIEW 3)
+ * ======================================================== */
+.settings-helper-text {
+  font-size: 0.82rem;
+  color: var(--ios-text-secondary);
+  line-height: 1.4;
+  margin-bottom: 14px;
+}
+
+.mode-checkbox-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--ios-separator);
+}
+
+.mode-checkbox-row:last-child {
+  border-bottom: none;
+}
+
+.mode-checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ios-text-primary);
+  cursor: pointer;
+  flex: 1;
+}
+
+.mode-checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ios-blue);
+  cursor: pointer;
+}
+
+.custom-mode-card {
+  background: var(--ios-surface-grouped);
+  border-radius: var(--ios-radius-md);
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+}
+
+.custom-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.custom-mode-header input {
+  background: transparent;
+  border: none;
+  color: var(--ios-cyan);
+  font-size: 0.95rem;
+  font-weight: 700;
+  outline: none;
 }
 
 /* Scanned Result Sheet */

@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  QUICKSWAP - PAYTM STYLE SCANNER & iOS PROFILE HUB
+ *  QUICKSWAP - APPLE iOS PROFILE HUB & PAYTM SCANNER ENGINE
  * ========================================================
  */
 
@@ -16,16 +16,29 @@ let userProfile = {
   instagram: '',
   email: '',
   linkedin: '',
-  customLinks: [] // [{ label: 'GitHub', value: 'https://github.com/...' }]
+  customLinks: [] // [{ label: 'GitHub', value: '...' }]
 };
 
-let privacySettings = {
-  phone: true,
-  whatsapp: true,
-  instagram: true,
-  email: true,
-  linkedin: true
+// Mode configuration: which fields belong to each mode
+let modeConfigs = {
+  work: {
+    title: 'Work Contact QR',
+    fields: ['phone', 'email', 'linkedin']
+  },
+  social: {
+    title: 'Social Contact QR',
+    fields: ['whatsapp', 'instagram']
+  },
+  all: {
+    title: 'Complete Profile QR',
+    fields: ['phone', 'whatsapp', 'instagram', 'email', 'linkedin']
+  }
 };
+
+// Custom user created modes (e.g. College, Gaming)
+let customModes = []; // [{ id: 'gaming', name: 'Gaming', fields: ['instagram'] }]
+
+let activeSharingMode = 'work'; // Currently selected mode on the My QR screen
 
 let html5QrScanner = null;
 let isCameraActive = false;
@@ -34,7 +47,7 @@ let qrCodeInstance = null;
 // ==========================================
 // 2. DOM ELEMENTS
 // ==========================================
-// Navigation & Views
+// Main View Nav
 const navBtnScanner = document.getElementById('nav-btn-scanner');
 const navBtnMyQr = document.getElementById('nav-btn-myqr');
 const scannerView = document.getElementById('scanner-view');
@@ -45,21 +58,17 @@ const openProfileBtn = document.getElementById('open-profile-btn');
 const closeProfileBtn = document.getElementById('close-profile-btn');
 const profileSheetOverlay = document.getElementById('profile-sheet-overlay');
 const headerAvatarCircle = document.getElementById('header-avatar-circle');
+const sheetTitle = document.getElementById('sheet-title');
+const sheetBackBtn = document.getElementById('sheet-back-btn');
 
-// Camera & Scanner Controls
-const toggleCameraBtn = document.getElementById('toggle-camera-btn');
-const cameraBtnText = document.getElementById('camera-btn-text');
-const qrFileInput = document.getElementById('qr-file-input');
-const laserLine = document.getElementById('laser-line');
+// Subviews inside Profile Sheet
+const profileCardSubview = document.getElementById('profile-card-subview');
+const profileEditSubview = document.getElementById('profile-edit-subview');
+const modeSettingsSubview = document.getElementById('mode-settings-subview');
+const gotoEditProfileBtn = document.getElementById('goto-edit-profile-btn');
+const gotoModeSettingsBtn = document.getElementById('goto-mode-settings-btn');
 
-// Scanned Result Modal
-const scanResultModal = document.getElementById('scan-result-modal');
-const closeScanResultBtn = document.getElementById('close-scan-result-btn');
-const scannedName = document.getElementById('scanned-name');
-const scannedDetail = document.getElementById('scanned-detail');
-const scannedActionsContainer = document.getElementById('scanned-actions-container');
-
-// Profile Form Elements
+// Form Inputs
 const profileForm = document.getElementById('profile-form');
 const avatarInput = document.getElementById('avatar-input');
 const removePhotoBtn = document.getElementById('remove-photo-btn');
@@ -72,34 +81,43 @@ const instagramInput = document.getElementById('instagram');
 const emailInput = document.getElementById('email');
 const linkedinInput = document.getElementById('linkedin');
 
-// Custom Links Container
+// Custom Links in Edit Form
 const customFieldsContainer = document.getElementById('custom-fields-container');
 const addCustomFieldBtn = document.getElementById('add-custom-field-btn');
 
-// QR View Elements
+// Mode Settings View Elements
+const workItemsList = document.getElementById('work-items-list');
+const socialItemsList = document.getElementById('social-items-list');
+const customModesContainer = document.getElementById('custom-modes-container');
+const addCustomModeBtn = document.getElementById('add-custom-mode-btn');
+const saveModesBtn = document.getElementById('save-modes-btn');
+
+// Digital Card Subview Elements
 const cardAvatar = document.getElementById('card-avatar');
 const cardName = document.getElementById('card-name');
 const cardTitle = document.getElementById('card-title');
 const cardLinks = document.getElementById('card-links');
+
+// My QR View Elements
+const modeChipsContainer = document.getElementById('mode-chips-container');
+const currentModeTitle = document.getElementById('current-mode-title');
+const currentModeSummary = document.getElementById('current-mode-summary');
 const qrcodeDiv = document.getElementById('qrcode');
 const downloadVcfBtn = document.getElementById('download-vcf-btn');
+const peekProfileBtn = document.getElementById('peek-profile-btn');
 
-// Toggles
-const togglePhone = document.getElementById('toggle-phone');
-const toggleWhatsapp = document.getElementById('toggle-whatsapp');
-const toggleInstagram = document.getElementById('toggle-instagram');
-const toggleEmail = document.getElementById('toggle-email');
-const toggleLinkedin = document.getElementById('toggle-linkedin');
+// Camera & Scanner Elements
+const toggleCameraBtn = document.getElementById('toggle-camera-btn');
+const cameraBtnText = document.getElementById('camera-btn-text');
+const qrFileInput = document.getElementById('qr-file-input');
+const laserLine = document.getElementById('laser-line');
 
-const labelPhone = document.getElementById('toggle-label-phone');
-const labelWhatsapp = document.getElementById('toggle-label-whatsapp');
-const labelInstagram = document.getElementById('toggle-label-instagram');
-const labelEmail = document.getElementById('toggle-label-email');
-const labelLinkedin = document.getElementById('toggle-label-linkedin');
-
-const presetAll = document.getElementById('preset-all');
-const presetWork = document.getElementById('preset-work');
-const presetSocial = document.getElementById('preset-social');
+// Scanned Result Modal
+const scanResultModal = document.getElementById('scan-result-modal');
+const closeScanResultBtn = document.getElementById('close-scan-result-btn');
+const scannedName = document.getElementById('scanned-name');
+const scannedDetail = document.getElementById('scanned-detail');
+const scannedActionsContainer = document.getElementById('scanned-actions-container');
 
 // ==========================================
 // 3. MAIN NAVIGATION: [ SCANNER ] vs [ MY QR ]
@@ -116,9 +134,9 @@ function switchMainView(view) {
     myqrView.classList.add('active-view');
     scannerView.classList.remove('active-view');
 
-    // Agar camera chal raha ho toh band karein
     stopCamera();
-    renderQrCode();
+    renderModeChips();
+    renderSharingQr();
   }
 }
 
@@ -126,161 +144,144 @@ navBtnScanner.addEventListener('click', () => switchMainView('scanner'));
 navBtnMyQr.addEventListener('click', () => switchMainView('myqr'));
 
 // ==========================================
-// 4. PAYTM STYLE CAMERA SCANNER (html5-qrcode)
+// 4. PROFILE SHEET NAVIGATION & SUBVIEWS
 // ==========================================
-async function startCamera() {
-  if (!html5QrScanner) {
-    html5QrScanner = new Html5Qrcode("reader");
-  }
-
-  try {
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    await html5QrScanner.start(
-      { facingMode: "environment" }, // Rear phone camera
-      config,
-      onScanSuccess,
-      (err) => { /* ignore frame errors */ }
-    );
-    isCameraActive = true;
-    cameraBtnText.textContent = "🛑 Stop Camera";
-    laserLine.style.display = "block";
-  } catch (err) {
-    console.error("Camera access error:", err);
-    alert("Camera permission denied or camera not available on this device.");
-  }
-}
-
-async function stopCamera() {
-  if (html5QrScanner && isCameraActive) {
-    try {
-      await html5QrScanner.stop();
-      isCameraActive = false;
-      cameraBtnText.textContent = "📷 Open Camera";
-      laserLine.style.display = "none";
-    } catch (err) {
-      console.error(err);
-    }
-  }
-}
-
-toggleCameraBtn.addEventListener('click', () => {
-  if (isCameraActive) {
-    stopCamera();
-  } else {
-    startCamera();
-  }
-});
-
-// Scan from Photo Gallery Fallback
-qrFileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  if (!html5QrScanner) {
-    html5QrScanner = new Html5Qrcode("reader");
-  }
-
-  try {
-    const decodedText = await html5QrScanner.scanFile(file, true);
-    onScanSuccess(decodedText);
-  } catch (err) {
-    alert("No QR code found in this photo. Try another image.");
-  }
-});
-
-// Jab QR successfully scan ho jaye:
-function onScanSuccess(decodedText) {
-  stopCamera();
-
-  // Contact info parse karein
-  let contact = parseScannedQr(decodedText);
-
-  scannedName.textContent = contact.name || "Scanned Contact";
-  scannedDetail.textContent = contact.phone || contact.email || contact.url || decodedText;
-
-  scannedActionsContainer.innerHTML = '';
-
-  // 1-Click Save button
-  if (contact.vcard) {
-    const blob = new Blob([contact.vcard], { type: 'text/vcard;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    scannedActionsContainer.innerHTML += `
-      <a href="${url}" download="${(contact.name || 'contact').replace(/\s+/g, '_')}.vcf" class="ios-action-btn apple-save-btn">
-        📥 Save to Phonebook (.vcf)
-      </a>
-    `;
-  } else if (contact.phone) {
-    scannedActionsContainer.innerHTML += `
-      <a href="tel:${contact.phone}" class="ios-action-btn primary-action">
-        📞 Call ${contact.phone}
-      </a>
-    `;
-  }
-
-  if (contact.url) {
-    scannedActionsContainer.innerHTML += `
-      <a href="${contact.url}" target="_blank" class="ios-action-btn ios-pill-btn secondary">
-        🌐 Open Link
-      </a>
-    `;
-  }
-
-  scanResultModal.classList.add('active');
-}
-
-closeScanResultBtn.addEventListener('click', () => {
-  scanResultModal.classList.remove('active');
-});
-
-// MECARD / VCARD / URL text parser
-function parseScannedQr(text) {
-  let contact = { name: '', phone: '', email: '', url: '', vcard: '' };
-
-  if (text.startsWith('BEGIN:VCARD')) {
-    contact.vcard = text;
-    const fnMatch = text.match(/FN:(.+)/);
-    if (fnMatch) contact.name = fnMatch[1].trim();
-    const telMatch = text.match(/TEL.*:(.+)/);
-    if (telMatch) contact.phone = telMatch[1].trim();
-  } else if (text.startsWith('MECARD:')) {
-    const nMatch = text.match(/N:([^;]+)/);
-    if (nMatch) contact.name = nMatch[1];
-    const telMatch = text.match(/TEL:([^;]+)/);
-    if (telMatch) contact.phone = telMatch[1];
-    const emailMatch = text.match(/EMAIL:([^;]+)/);
-    if (emailMatch) contact.email = emailMatch[1];
-  } else if (text.startsWith('http://') || text.startsWith('https://')) {
-    contact.url = text;
-    contact.name = "Web Link";
-  } else if (/^\+?[0-9\s-]{7,15}$/.test(text.trim())) {
-    contact.phone = text.trim();
-    contact.name = "Phone Number";
-  } else {
-    contact.name = "QR Information";
-  }
-
-  return contact;
-}
-
-// ==========================================
-// 5. SLIDE-UP PROFILE DRAWER
-// ==========================================
-openProfileBtn.addEventListener('click', () => {
+function openProfileSheet(subview = 'card') {
   profileSheetOverlay.classList.add('active');
-});
+  switchProfileSubview(subview);
+}
 
-closeProfileBtn.addEventListener('click', () => {
+function closeProfileSheet() {
   profileSheetOverlay.classList.remove('active');
-});
+  // Reset back to card view for next time
+  setTimeout(() => switchProfileSubview('card'), 300);
+}
+
+openProfileBtn.addEventListener('click', () => openProfileSheet('card'));
+peekProfileBtn.addEventListener('click', () => openProfileSheet('card'));
+closeProfileBtn.addEventListener('click', closeProfileSheet);
 
 profileSheetOverlay.addEventListener('click', (e) => {
-  if (e.target === profileSheetOverlay) {
-    profileSheetOverlay.classList.remove('active');
-  }
+  if (e.target === profileSheetOverlay) closeProfileSheet();
 });
 
+function switchProfileSubview(subview) {
+  // Hide all subviews
+  profileCardSubview.classList.remove('active-subview');
+  profileEditSubview.classList.remove('active-subview');
+  modeSettingsSubview.classList.remove('active-subview');
+
+  if (subview === 'card') {
+    sheetTitle.textContent = 'My Profile';
+    sheetBackBtn.style.display = 'none';
+    profileCardSubview.classList.add('active-subview');
+    renderDigitalCard();
+  } else if (subview === 'edit') {
+    sheetTitle.textContent = 'Edit Profile';
+    sheetBackBtn.style.display = 'inline-block';
+    profileEditSubview.classList.add('active-subview');
+  } else if (subview === 'settings') {
+    sheetTitle.textContent = 'Mode Settings';
+    sheetBackBtn.style.display = 'inline-block';
+    modeSettingsSubview.classList.add('active-subview');
+    renderModeSettingsChecklists();
+  }
+}
+
+gotoEditProfileBtn.addEventListener('click', () => switchProfileSubview('edit'));
+gotoModeSettingsBtn.addEventListener('click', () => switchProfileSubview('settings'));
+sheetBackBtn.addEventListener('click', () => switchProfileSubview('card'));
+
 // ==========================================
-// 6. DYNAMIC "+ ADD CUSTOM LINK" FEATURE ➕
+// 5. DIGITAL CARD RENDERING (Screenshot Look!)
+// ==========================================
+function renderDigitalCard() {
+  // Avatar
+  if (userProfile.avatar) {
+    cardAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="Avatar">`;
+    headerAvatarCircle.innerHTML = `<img src="${userProfile.avatar}" alt="Avatar">`;
+    formAvatarPreview.innerHTML = `<img src="${userProfile.avatar}" alt="Avatar">`;
+    removePhotoBtn.style.display = 'inline-block';
+  } else {
+    const initial = userProfile.name ? userProfile.name.charAt(0).toUpperCase() : '⚡';
+    cardAvatar.innerHTML = `<span>${initial}</span>`;
+    headerAvatarCircle.innerHTML = `<span>${initial}</span>`;
+    formAvatarPreview.innerHTML = `<span>${initial}</span>`;
+    removePhotoBtn.style.display = 'none';
+  }
+
+  // Name & Title
+  cardName.textContent = userProfile.name || 'Your Name';
+  cardTitle.textContent = userProfile.title || 'Role / Headline';
+
+  // Saved Details
+  cardLinks.innerHTML = '';
+  let count = 0;
+
+  if (userProfile.phone) {
+    count++;
+    cardLinks.innerHTML += `
+      <div class="ios-link-pill">
+        <span>📞 Phone</span>
+        <strong>${userProfile.phone}</strong>
+      </div>`;
+  }
+
+  if (userProfile.whatsapp) {
+    count++;
+    cardLinks.innerHTML += `
+      <div class="ios-link-pill">
+        <span>💬 WhatsApp</span>
+        <strong>${userProfile.whatsapp}</strong>
+      </div>`;
+  }
+
+  if (userProfile.instagram) {
+    count++;
+    cardLinks.innerHTML += `
+      <div class="ios-link-pill">
+        <span>📸 Instagram</span>
+        <strong>@${userProfile.instagram.replace('@', '')}</strong>
+      </div>`;
+  }
+
+  if (userProfile.email) {
+    count++;
+    cardLinks.innerHTML += `
+      <div class="ios-link-pill">
+        <span>✉️ Email</span>
+        <strong>${userProfile.email}</strong>
+      </div>`;
+  }
+
+  if (userProfile.linkedin) {
+    count++;
+    cardLinks.innerHTML += `
+      <div class="ios-link-pill">
+        <span>💼 LinkedIn</span>
+        <strong>Connected</strong>
+      </div>`;
+  }
+
+  // Custom Extra Links
+  userProfile.customLinks.forEach(link => {
+    if (link.label && link.value) {
+      count++;
+      cardLinks.innerHTML += `
+        <div class="ios-link-pill">
+          <span>🔗 ${link.label}</span>
+          <strong>${link.value}</strong>
+        </div>`;
+    }
+  });
+
+  if (count === 0) {
+    cardLinks.innerHTML = `<p class="empty-hint">No details yet. Click "Edit Profile Details" below to add info.</p>`;
+  }
+}
+
+// ==========================================
+// 6. EDIT PROFILE FORM & "+ ADD LINK"
 // ==========================================
 function renderCustomFields() {
   customFieldsContainer.innerHTML = '';
@@ -296,26 +297,18 @@ function renderCustomFields() {
     row.innerHTML = `
       <input type="text" class="custom-label-input" placeholder="Title (e.g. GitHub)" value="${item.label}">
       <input type="text" class="custom-val-input" placeholder="URL or Handle" value="${item.value}">
-      <button type="button" class="delete-row-btn" data-index="${index}">✕</button>
+      <button type="button" class="delete-row-btn">✕</button>
     `;
 
-    // Row ke input changes track karein
     const labelInp = row.querySelector('.custom-label-input');
     const valInp = row.querySelector('.custom-val-input');
     const delBtn = row.querySelector('.delete-row-btn');
 
-    labelInp.addEventListener('input', (e) => {
-      userProfile.customLinks[index].label = e.target.value;
-    });
-
-    valInp.addEventListener('input', (e) => {
-      userProfile.customLinks[index].value = e.target.value;
-    });
-
+    labelInp.addEventListener('input', (e) => userProfile.customLinks[index].label = e.target.value);
+    valInp.addEventListener('input', (e) => userProfile.customLinks[index].value = e.target.value);
     delBtn.addEventListener('click', () => {
       userProfile.customLinks.splice(index, 1);
       renderCustomFields();
-      updateCardAndToggles();
     });
 
     customFieldsContainer.appendChild(row);
@@ -327,9 +320,7 @@ addCustomFieldBtn.addEventListener('click', () => {
   renderCustomFields();
 });
 
-// ==========================================
-// 7. PHOTO UPLOAD (FileReader API)
-// ==========================================
+// Photo Upload
 avatarInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -337,7 +328,7 @@ avatarInput.addEventListener('change', (e) => {
   const reader = new FileReader();
   reader.onload = function(event) {
     userProfile.avatar = event.target.result;
-    updateCardAndToggles();
+    renderDigitalCard();
   };
   reader.readAsDataURL(file);
 });
@@ -345,10 +336,10 @@ avatarInput.addEventListener('change', (e) => {
 removePhotoBtn.addEventListener('click', () => {
   userProfile.avatar = '';
   avatarInput.value = '';
-  updateCardAndToggles();
+  renderDigitalCard();
 });
 
-// Profile Form Submit
+// Save Profile Form
 profileForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
@@ -361,160 +352,232 @@ profileForm.addEventListener('submit', (e) => {
   userProfile.linkedin = linkedinInput.value.trim();
 
   saveToLocalStorage();
-  updateCardAndToggles();
-  profileSheetOverlay.classList.remove('active');
+  renderDigitalCard();
+  renderSharingQr();
+
+  // Return to card view
+  switchProfileSubview('card');
   alert('Profile updated successfully! ✨');
 });
 
 // ==========================================
-// 8. PRIVACY TOGGLE CONTROLS
+// 7. CONFIGURE WORK & SOCIAL MODES & SECTIONS
 // ==========================================
-const toggleMap = [
-  { checkbox: togglePhone, key: 'phone' },
-  { checkbox: toggleWhatsapp, key: 'whatsapp' },
-  { checkbox: toggleInstagram, key: 'instagram' },
-  { checkbox: toggleEmail, key: 'email' },
-  { checkbox: toggleLinkedin, key: 'linkedin' }
+const availableFields = [
+  { key: 'phone', label: '📞 Phone Number' },
+  { key: 'email', label: '✉️ Email Address' },
+  { key: 'linkedin', label: '💼 LinkedIn' },
+  { key: 'whatsapp', label: '💬 WhatsApp' },
+  { key: 'instagram', label: '📸 Instagram' }
 ];
 
-toggleMap.forEach(({ checkbox, key }) => {
-  checkbox.addEventListener('change', (e) => {
-    privacySettings[key] = e.target.checked;
-    saveToLocalStorage();
-    updateCardAndToggles();
-    renderQrCode();
+function renderModeSettingsChecklists() {
+  // 1. Work checklist
+  workItemsList.innerHTML = '';
+  availableFields.forEach(f => {
+    const isChecked = modeConfigs.work.fields.includes(f.key);
+    workItemsList.innerHTML += `
+      <div class="mode-checkbox-row">
+        <label for="work-${f.key}">
+          <span>${f.label}</span>
+        </label>
+        <input type="checkbox" id="work-${f.key}" data-mode="work" data-field="${f.key}" ${isChecked ? 'checked' : ''}>
+      </div>
+    `;
   });
+
+  // 2. Social checklist
+  socialItemsList.innerHTML = '';
+  availableFields.forEach(f => {
+    const isChecked = modeConfigs.social.fields.includes(f.key);
+    socialItemsList.innerHTML += `
+      <div class="mode-checkbox-row">
+        <label for="social-${f.key}">
+          <span>${f.label}</span>
+        </label>
+        <input type="checkbox" id="social-${f.key}" data-mode="social" data-field="${f.key}" ${isChecked ? 'checked' : ''}>
+      </div>
+    `;
+  });
+
+  // 3. Custom Modes List
+  renderCustomModesList();
+}
+
+function renderCustomModesList() {
+  customModesContainer.innerHTML = '';
+  customModes.forEach((mode, index) => {
+    const card = document.createElement('div');
+    card.className = 'custom-mode-card';
+    card.innerHTML = `
+      <div class="custom-mode-header">
+        <input type="text" value="${mode.name}" placeholder="Section Name">
+        <button type="button" class="delete-row-btn" data-index="${index}">✕</button>
+      </div>
+      <div class="ios-inset-group">
+        ${availableFields.map(f => `
+          <div class="mode-checkbox-row">
+            <label><span>${f.label}</span></label>
+            <input type="checkbox" data-custom-index="${index}" data-field="${f.key}" ${mode.fields.includes(f.key) ? 'checked' : ''}>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // Listeners for custom mode name and checkboxes
+    const nameInp = card.querySelector('input[type="text"]');
+    nameInp.addEventListener('input', (e) => {
+      customModes[index].name = e.target.value;
+    });
+
+    const delBtn = card.querySelector('.delete-row-btn');
+    delBtn.addEventListener('click', () => {
+      customModes.splice(index, 1);
+      renderCustomModesList();
+    });
+
+    const checks = card.querySelectorAll('input[type="checkbox"]');
+    checks.forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const field = e.target.dataset.field;
+        if (e.target.checked) {
+          if (!customModes[index].fields.includes(field)) customModes[index].fields.push(field);
+        } else {
+          customModes[index].fields = customModes[index].fields.filter(x => x !== field);
+        }
+      });
+    });
+
+    customModesContainer.appendChild(card);
+  });
+}
+
+addCustomModeBtn.addEventListener('click', () => {
+  const newId = 'custom_' + Date.now();
+  customModes.push({
+    id: newId,
+    name: 'New Section',
+    fields: ['phone', 'instagram']
+  });
+  renderCustomModesList();
 });
 
-function setAllToggles(phone, whatsapp, instagram, email, linkedin) {
-  privacySettings.phone = phone;
-  privacySettings.whatsapp = whatsapp;
-  privacySettings.instagram = instagram;
-  privacySettings.email = email;
-  privacySettings.linkedin = linkedin;
+saveModesBtn.addEventListener('click', () => {
+  // Read work mode checkboxes
+  modeConfigs.work.fields = [];
+  document.querySelectorAll('#work-items-list input[type="checkbox"]:checked').forEach(c => {
+    modeConfigs.work.fields.push(c.dataset.field);
+  });
 
-  togglePhone.checked = phone;
-  toggleWhatsapp.checked = whatsapp;
-  toggleInstagram.checked = instagram;
-  toggleEmail.checked = email;
-  toggleLinkedin.checked = linkedin;
+  // Read social mode checkboxes
+  modeConfigs.social.fields = [];
+  document.querySelectorAll('#social-items-list input[type="checkbox"]:checked').forEach(c => {
+    modeConfigs.social.fields.push(c.dataset.field);
+  });
 
   saveToLocalStorage();
-  updateCardAndToggles();
-  renderQrCode();
-}
-
-presetAll.addEventListener('click', () => setAllToggles(true, true, true, true, true));
-presetWork.addEventListener('click', () => setAllToggles(true, false, false, true, true));
-presetSocial.addEventListener('click', () => setAllToggles(false, true, true, false, false));
+  renderModeChips();
+  renderSharingQr();
+  switchProfileSubview('card');
+  alert('Mode settings saved! ✨');
+});
 
 // ==========================================
-// 9. UPDATE CARD, AVATARS & LABELS
+// 8. MY QR CODE VIEW & CHIPS ENGINE
 // ==========================================
-function updateCardAndToggles() {
-  // Top Header Avatar Circle
-  if (userProfile.avatar) {
-    headerAvatarCircle.innerHTML = `<img src="${userProfile.avatar}" alt="Me">`;
-    formAvatarPreview.innerHTML = `<img src="${userProfile.avatar}" alt="Me">`;
-    cardAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="Me">`;
-    removePhotoBtn.style.display = 'inline-block';
-  } else {
-    const initial = userProfile.name ? userProfile.name.charAt(0).toUpperCase() : '⚡';
-    headerAvatarCircle.innerHTML = `<span>${initial}</span>`;
-    formAvatarPreview.innerHTML = `<span>${initial}</span>`;
-    cardAvatar.innerHTML = `<span>${initial}</span>`;
-    removePhotoBtn.style.display = 'none';
-  }
+function renderModeChips() {
+  modeChipsContainer.innerHTML = `
+    <button type="button" class="mode-chip ${activeSharingMode === 'work' ? 'active' : ''}" data-mode="work">
+      💼 Work
+    </button>
+    <button type="button" class="mode-chip ${activeSharingMode === 'social' ? 'active' : ''}" data-mode="social">
+      🎉 Social
+    </button>
+    <button type="button" class="mode-chip ${activeSharingMode === 'all' ? 'active' : ''}" data-mode="all">
+      ⚡ All
+    </button>
+  `;
 
-  // Card Text
-  cardName.textContent = userProfile.name || 'Your Name';
-  cardTitle.textContent = userProfile.title || 'Role / Headline';
+  // Custom mode chips
+  customModes.forEach(m => {
+    modeChipsContainer.innerHTML += `
+      <button type="button" class="mode-chip ${activeSharingMode === m.id ? 'active' : ''}" data-mode="${m.id}">
+        🌟 ${m.name}
+      </button>
+    `;
+  });
 
-  // Toggle Labels
-  labelPhone.textContent = userProfile.phone || 'Not set';
-  labelWhatsapp.textContent = userProfile.whatsapp || 'Not set';
-  labelInstagram.textContent = userProfile.instagram ? `@${userProfile.instagram.replace('@', '')}` : 'Not set';
-  labelEmail.textContent = userProfile.email || 'Not set';
-  labelLinkedin.textContent = userProfile.linkedin ? 'Configured' : 'Not set';
-
-  // Card Links
-  cardLinks.innerHTML = '';
-  if (privacySettings.phone && userProfile.phone) {
-    cardLinks.innerHTML += `<div class="ios-link-pill"><span>📞 Phone</span><strong>${userProfile.phone}</strong></div>`;
-  }
-  if (privacySettings.whatsapp && userProfile.whatsapp) {
-    cardLinks.innerHTML += `<div class="ios-link-pill"><span>💬 WhatsApp</span><strong>${userProfile.whatsapp}</strong></div>`;
-  }
-  if (privacySettings.instagram && userProfile.instagram) {
-    cardLinks.innerHTML += `<div class="ios-link-pill"><span>📸 Instagram</span><strong>@${userProfile.instagram.replace('@', '')}</strong></div>`;
-  }
-  if (privacySettings.email && userProfile.email) {
-    cardLinks.innerHTML += `<div class="ios-link-pill"><span>✉️ Email</span><strong>${userProfile.email}</strong></div>`;
-  }
-  if (privacySettings.linkedin && userProfile.linkedin) {
-    cardLinks.innerHTML += `<div class="ios-link-pill"><span>💼 LinkedIn</span><strong>Connected</strong></div>`;
-  }
-
-  // Custom Links
-  userProfile.customLinks.forEach(link => {
-    if (link.label && link.value) {
-      cardLinks.innerHTML += `<div class="ios-link-pill"><span>🔗 ${link.label}</span><strong>${link.value}</strong></div>`;
-    }
+  // Add click listeners to all chips
+  modeChipsContainer.querySelectorAll('.mode-chip').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      activeSharingMode = btn.dataset.mode;
+      renderModeChips();
+      renderSharingQr();
+    });
   });
 }
 
-// ==========================================
-// 10. GENERATE QR CODE
-// ==========================================
-function renderQrCode() {
+function getActiveModeFields() {
+  if (activeSharingMode === 'work') return { title: 'Work Contact QR', fields: modeConfigs.work.fields };
+  if (activeSharingMode === 'social') return { title: 'Social Contact QR', fields: modeConfigs.social.fields };
+  if (activeSharingMode === 'all') return { title: 'Complete Contact QR', fields: modeConfigs.all.fields };
+
+  const custom = customModes.find(m => m.id === activeSharingMode);
+  if (custom) return { title: `${custom.name} QR`, fields: custom.fields };
+
+  return { title: 'Contact QR', fields: [] };
+}
+
+function renderSharingQr() {
   if (!qrcodeDiv) return;
 
-  let qrData = `MECARD:N:${userProfile.name || 'User'};`;
-  if (privacySettings.phone && userProfile.phone) qrData += `TEL:${userProfile.phone};`;
-  if (privacySettings.email && userProfile.email) qrData += `EMAIL:${userProfile.email};`;
-  if (privacySettings.whatsapp && userProfile.whatsapp) qrData += `NOTE:WhatsApp:wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')};`;
-  if (privacySettings.instagram && userProfile.instagram) qrData += `URL:https://instagram.com/${userProfile.instagram.replace('@', '')};`;
-  
-  // Custom links in QR
-  userProfile.customLinks.forEach(item => {
-    if (item.value) qrData += `NOTE:${item.label}:${item.value};`;
-  });
+  const modeInfo = getActiveModeFields();
+  currentModeTitle.textContent = modeInfo.title;
 
+  const activeFieldNames = modeInfo.fields
+    .map(k => availableFields.find(f => f.key === k)?.label.split(' ')[1] || k)
+    .join(', ');
+  currentModeSummary.textContent = activeFieldNames ? `Sharing: ${activeFieldNames}` : 'Nothing selected in this mode';
+
+  // Build QR data
+  let qrData = `MECARD:N:${userProfile.name || 'User'};`;
+  if (modeInfo.fields.includes('phone') && userProfile.phone) qrData += `TEL:${userProfile.phone};`;
+  if (modeInfo.fields.includes('email') && userProfile.email) qrData += `EMAIL:${userProfile.email};`;
+  if (modeInfo.fields.includes('whatsapp') && userProfile.whatsapp) qrData += `NOTE:WhatsApp:${userProfile.whatsapp};`;
+  if (modeInfo.fields.includes('instagram') && userProfile.instagram) qrData += `URL:https://instagram.com/${userProfile.instagram.replace('@', '')};`;
+  if (modeInfo.fields.includes('linkedin') && userProfile.linkedin) qrData += `URL:${userProfile.linkedin};`;
   qrData += `;`;
 
   qrcodeDiv.innerHTML = '';
   qrCodeInstance = new QRCode(qrcodeDiv, {
     text: qrData,
-    width: 175,
-    height: 175,
+    width: 180,
+    height: 180,
     colorDark: '#000000',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
 }
 
-// ==========================================
-// 11. VCARD (.vcf) GENERATION
-// ==========================================
+// Download vCard for current mode
 downloadVcfBtn.addEventListener('click', () => {
   if (!userProfile.name) {
-    alert('Please enter your name first in Profile!');
-    profileSheetOverlay.classList.add('active');
+    alert('Please enter your name in Profile!');
+    openProfileSheet('edit');
     return;
   }
+
+  const modeInfo = getActiveModeFields();
 
   let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
   vcard += `FN:${userProfile.name}\n`;
   if (userProfile.title) vcard += `TITLE:${userProfile.title}\n`;
-  if (privacySettings.phone && userProfile.phone) vcard += `TEL;TYPE=CELL:${userProfile.phone}\n`;
-  if (privacySettings.email && userProfile.email) vcard += `EMAIL:${userProfile.email}\n`;
-  if (privacySettings.whatsapp && userProfile.whatsapp) vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')}\n`;
-  if (privacySettings.instagram && userProfile.instagram) vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${userProfile.instagram.replace('@', '')}\n`;
-  if (privacySettings.linkedin && userProfile.linkedin) vcard += `URL:${userProfile.linkedin}\n`;
 
-  userProfile.customLinks.forEach(item => {
-    if (item.value) vcard += `URL;TYPE=${item.label}:${item.value}\n`;
-  });
+  if (modeInfo.fields.includes('phone') && userProfile.phone) vcard += `TEL;TYPE=CELL:${userProfile.phone}\n`;
+  if (modeInfo.fields.includes('email') && userProfile.email) vcard += `EMAIL:${userProfile.email}\n`;
+  if (modeInfo.fields.includes('whatsapp') && userProfile.whatsapp) vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')}\n`;
+  if (modeInfo.fields.includes('instagram') && userProfile.instagram) vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${userProfile.instagram.replace('@', '')}\n`;
+  if (modeInfo.fields.includes('linkedin') && userProfile.linkedin) vcard += `URL:${userProfile.linkedin}\n`;
 
   if (userProfile.avatar && userProfile.avatar.includes('base64,')) {
     const base64Data = userProfile.avatar.split('base64,')[1];
@@ -526,7 +589,7 @@ downloadVcfBtn.addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const downloadLink = document.createElement('a');
   downloadLink.href = url;
-  downloadLink.setAttribute('download', `${(userProfile.name || 'contact').replace(/\s+/g, '_')}.vcf`);
+  downloadLink.setAttribute('download', `${(userProfile.name || 'contact').replace(/\s+/g, '_')}_${activeSharingMode}.vcf`);
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
@@ -534,16 +597,134 @@ downloadVcfBtn.addEventListener('click', () => {
 });
 
 // ==========================================
-// 12. STORAGE HELPERS
+// 9. PAYTM CAMERA SCANNER ENGINE
+// ==========================================
+async function startCamera() {
+  if (!html5QrScanner) {
+    html5QrScanner = new Html5Qrcode("reader");
+  }
+
+  try {
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    await html5QrScanner.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess,
+      (err) => {}
+    );
+    isCameraActive = true;
+    cameraBtnText.textContent = "🛑 Stop Camera";
+    laserLine.style.display = "block";
+  } catch (err) {
+    console.error(err);
+    alert("Camera permission denied or camera not available.");
+  }
+}
+
+async function stopCamera() {
+  if (html5QrScanner && isCameraActive) {
+    try {
+      await html5QrScanner.stop();
+      isCameraActive = false;
+      cameraBtnText.textContent = "📷 Open Camera";
+      laserLine.style.display = "none";
+    } catch (err) {}
+  }
+}
+
+toggleCameraBtn.addEventListener('click', () => {
+  if (isCameraActive) stopCamera();
+  else startCamera();
+});
+
+qrFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!html5QrScanner) html5QrScanner = new Html5Qrcode("reader");
+
+  try {
+    const decodedText = await html5QrScanner.scanFile(file, true);
+    onScanSuccess(decodedText);
+  } catch (err) {
+    alert("No QR code found in this photo.");
+  }
+});
+
+function onScanSuccess(decodedText) {
+  stopCamera();
+  const contact = parseScannedQr(decodedText);
+
+  scannedName.textContent = contact.name || "Scanned Contact";
+  scannedDetail.textContent = contact.phone || contact.email || contact.url || decodedText;
+
+  scannedActionsContainer.innerHTML = '';
+  if (contact.vcard) {
+    const blob = new Blob([contact.vcard], { type: 'text/vcard;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    scannedActionsContainer.innerHTML += `
+      <a href="${url}" download="${(contact.name || 'contact').replace(/\s+/g, '_')}.vcf" class="ios-action-btn apple-save-btn">
+        📥 Save to Contacts (.vcf)
+      </a>`;
+  } else if (contact.phone) {
+    scannedActionsContainer.innerHTML += `
+      <a href="tel:${contact.phone}" class="ios-action-btn primary-action">
+        📞 Call ${contact.phone}
+      </a>`;
+  }
+
+  if (contact.url) {
+    scannedActionsContainer.innerHTML += `
+      <a href="${contact.url}" target="_blank" class="ios-action-btn ios-pill-btn secondary">
+        🌐 Open Link
+      </a>`;
+  }
+
+  scanResultModal.classList.add('active');
+}
+
+closeScanResultBtn.addEventListener('click', () => scanResultModal.classList.remove('active'));
+
+function parseScannedQr(text) {
+  let contact = { name: '', phone: '', email: '', url: '', vcard: '' };
+  if (text.startsWith('BEGIN:VCARD')) {
+    contact.vcard = text;
+    const fnMatch = text.match(/FN:(.+)/);
+    if (fnMatch) contact.name = fnMatch[1].trim();
+    const telMatch = text.match(/TEL.*:(.+)/);
+    if (telMatch) contact.phone = telMatch[1].trim();
+  } else if (text.startsWith('MECARD:')) {
+    const nMatch = text.match(/N:([^;]+)/);
+    if (nMatch) contact.name = nMatch[1];
+    const telMatch = text.match(/TEL:([^;]+)/);
+    if (telMatch) contact.phone = telMatch[1];
+    const emailMatch = text.match(/EMAIL:([^;]+)/);
+    if (emailMatch) contact.email = emailMatch[1];
+  } else if (text.startsWith('http')) {
+    contact.url = text;
+    contact.name = "Web Link";
+  } else if (/^\+?[0-9\s-]{7,15}$/.test(text.trim())) {
+    contact.phone = text.trim();
+    contact.name = "Phone Number";
+  } else {
+    contact.name = "QR Information";
+  }
+  return contact;
+}
+
+// ==========================================
+// 10. LOCALSTORAGE PERSISTENCE
 // ==========================================
 function saveToLocalStorage() {
   localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
-  localStorage.setItem('quickswap_privacy', JSON.stringify(privacySettings));
+  localStorage.setItem('quickswap_modes', JSON.stringify(modeConfigs));
+  localStorage.setItem('quickswap_custom_modes', JSON.stringify(customModes));
 }
 
 function loadSavedData() {
   const savedProfile = localStorage.getItem('quickswap_profile');
-  const savedPrivacy = localStorage.getItem('quickswap_privacy');
+  const savedModes = localStorage.getItem('quickswap_modes');
+  const savedCustomModes = localStorage.getItem('quickswap_custom_modes');
 
   if (savedProfile) {
     userProfile = JSON.parse(savedProfile);
@@ -558,16 +739,20 @@ function loadSavedData() {
     linkedinInput.value = userProfile.linkedin || '';
 
     renderCustomFields();
-  } else {
-    // Pehli baar kholne par Profile sheet auto-open karein taaki user details daal sake!
-    profileSheetOverlay.classList.add('active');
   }
 
-  if (savedPrivacy) {
-    privacySettings = JSON.parse(savedPrivacy);
+  if (savedModes) {
+    modeConfigs = JSON.parse(savedModes);
   }
 
-  updateCardAndToggles();
+  if (savedCustomModes) {
+    customModes = JSON.parse(savedCustomModes);
+  }
+
+  renderDigitalCard();
+  renderModeChips();
+  renderSharingQr();
 }
 
+// Launch
 loadSavedData();

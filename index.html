@@ -8,7 +8,7 @@
   <title>QuickSwap • Scan & Share Contacts</title>
   <link rel="stylesheet" href="style.css">
   
-  <!-- QR Code Generator & Real-time HTML5 Camera Scanner CDN -->
+  <!-- QR Code Generator & Real-time Camera Scanner CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
@@ -18,7 +18,7 @@
 
   <div class="iphone-shell">
     
-    <!-- Top Navigation Bar (Like Paytm / Apple Header) -->
+    <!-- Top Navigation Bar -->
     <header class="top-bar">
       <div class="brand-group">
         <span class="pulse-indicator"></span>
@@ -26,14 +26,14 @@
       </div>
 
       <!-- Top Right Profile Avatar Button -->
-      <button type="button" id="open-profile-btn" class="profile-header-btn" title="Edit Profile & Add Details">
+      <button type="button" id="open-profile-btn" class="profile-header-btn" title="View Profile & Settings">
         <div class="header-avatar-circle" id="header-avatar-circle">
           <span id="header-avatar-fallback">⚡</span>
         </div>
       </button>
     </header>
 
-    <!-- Main Segmented Control: [ 📷 Scan Camera ] vs [ 📱 My QR ] -->
+    <!-- Main Navigation: [ 📷 Scan Camera ] vs [ 📱 My QR Code ] -->
     <nav class="main-segmented-nav">
       <button id="nav-btn-scanner" class="segmented-tab active">
         <span class="tab-icon">📷</span> Scan Camera
@@ -44,257 +44,253 @@
     </nav>
 
     <!-- ======================================================== -->
-    <!-- VIEW 1: PAYTM STYLE CAMERA SCANNER VIEW (DEFAULT)         -->
+    <!-- VIEW 1: PAYTM CAMERA SCANNER VIEW (DEFAULT HOME)         -->
     <!-- ======================================================== -->
     <main id="scanner-view" class="view-panel active-view">
       <div class="scanner-container">
         
-        <!-- Live Camera Viewfinder Box -->
         <div class="scanner-frame">
           <div id="reader" class="camera-stream"></div>
           
-          <!-- Laser Beam Overlay Animation -->
+          <!-- Laser Beam Animation -->
           <div class="laser-scanner" id="laser-line"></div>
 
-          <!-- 4 Corner Highlights (Scanner brackets) -->
+          <!-- Brackets -->
           <div class="corner-bracket top-left"></div>
           <div class="corner-bracket top-right"></div>
           <div class="corner-bracket bottom-left"></div>
           <div class="corner-bracket bottom-right"></div>
         </div>
 
-        <!-- Scanner Controls -->
         <div class="scanner-actions">
           <button id="toggle-camera-btn" class="ios-pill-btn">
             <span id="camera-btn-text">📷 Open Camera</span>
           </button>
           
-          <!-- File scan fallback -->
           <label for="qr-file-input" class="ios-pill-btn secondary">
             <span>🖼️ Scan from Photos</span>
             <input type="file" id="qr-file-input" accept="image/*" style="display: none;">
           </label>
         </div>
 
-        <p class="scanner-tip">Point your iPhone camera at any QuickSwap, vCard or WhatsApp QR</p>
+        <p class="scanner-tip">Point your camera at any QuickSwap, vCard, or Contact QR code</p>
       </div>
     </main>
 
     <!-- ======================================================== -->
-    <!-- VIEW 2: MY QR & NAMEDROP CARD VIEW                       -->
+    <!-- VIEW 2: MY QR CODE HUB (CLEAN & FAST FOR SHARING)        -->
     <!-- ======================================================== -->
     <section id="myqr-view" class="view-panel">
       
-      <!-- Apple NameDrop Digital Card Preview -->
-      <div class="namedrop-card">
-        <div class="card-avatar-wrapper">
-          <div class="avatar" id="card-avatar">
-            <span id="avatar-fallback">⚡</span>
-          </div>
-        </div>
-
-        <h2 id="card-name" class="card-name">Your Name</h2>
-        <p id="card-title" class="card-title">Role / Headline</p>
-
-        <div class="card-links" id="card-links">
-          <!-- Dynamic links -->
-        </div>
-
-        <button id="download-vcf-btn" class="ios-action-btn apple-save-btn">
-          📥 Download Contact Card (.vcf)
+      <!-- Instant Mode Switcher (Work vs Social vs All) -->
+      <div class="ios-section-label" style="text-align: center; margin-left: 0;">CHOOSE WHAT TO SHARE</div>
+      <div class="mode-chips-container" id="mode-chips-container">
+        <button type="button" class="mode-chip active" data-mode="work">
+          💼 Work
+        </button>
+        <button type="button" class="mode-chip" data-mode="social">
+          🎉 Social
+        </button>
+        <button type="button" class="mode-chip" data-mode="all">
+          ⚡ All Details
         </button>
       </div>
 
-      <!-- QR Code Display Box -->
+      <!-- Live Sharing QR Sheet -->
       <div class="ios-qr-sheet">
         <div class="qr-sheet-header">
-          <h3>Your Sharing QR</h3>
-          <p>Scan with any phone camera to exchange</p>
+          <h3 id="current-mode-title">Work Contact QR</h3>
+          <p id="current-mode-summary">Sharing: Phone, Email, LinkedIn</p>
         </div>
+        
         <div class="qr-canvas-wrapper">
           <div id="qrcode"></div>
         </div>
+
+        <div class="qr-sheet-footer">
+          <button id="download-vcf-btn" class="ios-action-btn apple-save-btn">
+            📥 Download This Contact (.vcf)
+          </button>
+        </div>
       </div>
 
-      <!-- Privacy Toggles Box -->
-      <div class="ios-section-label">SELECT WHAT TO SHARE</div>
-      <div class="preset-segmented">
-        <button type="button" class="preset-chip" id="preset-all">All</button>
-        <button type="button" class="preset-chip" id="preset-work">Work</button>
-        <button type="button" class="preset-chip" id="preset-social">Social</button>
-      </div>
-
-      <div class="ios-inset-group">
-        <div class="ios-switch-row">
-          <div class="switch-meta">
-            <span class="meta-icon">📞</span>
-            <div>
-              <span class="meta-title">Phone Number</span>
-              <span id="toggle-label-phone" class="meta-subtitle">Not set</span>
-            </div>
-          </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="toggle-phone" checked>
-            <span class="ios-slider"></span>
-          </label>
-        </div>
-
-        <div class="ios-switch-row">
-          <div class="switch-meta">
-            <span class="meta-icon">💬</span>
-            <div>
-              <span class="meta-title">WhatsApp</span>
-              <span id="toggle-label-whatsapp" class="meta-subtitle">Not set</span>
-            </div>
-          </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="toggle-whatsapp" checked>
-            <span class="ios-slider"></span>
-          </label>
-        </div>
-
-        <div class="ios-switch-row">
-          <div class="switch-meta">
-            <span class="meta-icon">📸</span>
-            <div>
-              <span class="meta-title">Instagram</span>
-              <span id="toggle-label-instagram" class="meta-subtitle">Not set</span>
-            </div>
-          </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="toggle-instagram" checked>
-            <span class="ios-slider"></span>
-          </label>
-        </div>
-
-        <div class="ios-switch-row">
-          <div class="switch-meta">
-            <span class="meta-icon">✉️</span>
-            <div>
-              <span class="meta-title">Email</span>
-              <span id="toggle-label-email" class="meta-subtitle">Not set</span>
-            </div>
-          </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="toggle-email" checked>
-            <span class="ios-slider"></span>
-          </label>
-        </div>
-
-        <div class="ios-switch-row">
-          <div class="switch-meta">
-            <span class="meta-icon">💼</span>
-            <div>
-              <span class="meta-title">LinkedIn</span>
-              <span id="toggle-label-linkedin" class="meta-subtitle">Not set</span>
-            </div>
-          </div>
-          <label class="ios-switch">
-            <input type="checkbox" id="toggle-linkedin" checked>
-            <span class="ios-slider"></span>
-          </label>
-        </div>
+      <!-- Quick Card Peek Link -->
+      <div class="profile-peek-box">
+        <p>Want to see how your card looks?</p>
+        <button type="button" id="peek-profile-btn" class="ios-link-pill-btn">
+          👁️ View & Edit My Profile Card
+        </button>
       </div>
 
     </section>
 
     <!-- ======================================================== -->
-    <!-- SLIDE-UP PROFILE DRAWER / SHEET (EDIT & ADD FIELDS)       -->
+    <!-- PROFILE & SETTINGS SLIDE-UP DRAWER (THE HEART ❤️)        -->
     <!-- ======================================================== -->
     <div id="profile-sheet-overlay" class="sheet-overlay">
       <div class="sheet-modal">
         <div class="sheet-grabber"></div>
 
+        <!-- Sheet Header with Back & Close -->
         <div class="sheet-header">
-          <h2>My Profile</h2>
+          <button type="button" id="sheet-back-btn" class="sheet-back-btn" style="display: none;">
+            ‹ Back
+          </button>
+          <h2 id="sheet-title">My Profile</h2>
           <button type="button" id="close-profile-btn" class="ios-close-btn">Done</button>
         </div>
 
         <div class="sheet-body">
-          <form id="profile-form">
-            
-            <!-- Avatar Edit -->
-            <div class="ios-avatar-section">
-              <div class="avatar-uploader">
-                <div class="avatar-preview-circle" id="form-avatar-preview">
-                  <span id="form-avatar-fallback">⚡</span>
+          
+          <!-- SUB-VIEW 1: DIGITAL CARD PREVIEW (DEFAULT IN PROFILE) -->
+          <div id="profile-card-subview" class="subview active-subview">
+            <div class="namedrop-card" id="digital-card">
+              <div class="card-avatar-wrapper">
+                <div class="avatar" id="card-avatar">
+                  <span id="avatar-fallback">⚡</span>
                 </div>
-                <label for="avatar-input" class="photo-badge">
-                  📷
-                </label>
-                <input type="file" id="avatar-input" accept="image/*" style="display: none;">
               </div>
-              <button type="button" id="remove-photo-btn" class="ios-link-btn" style="display: none;">Remove Photo</button>
-            </div>
 
-            <!-- Identity Details -->
-            <div class="ios-section-label">BASIC INFO</div>
-            <div class="ios-inset-group">
-              <div class="ios-row">
-                <span class="row-icon">👤</span>
-                <input type="text" id="name" placeholder="Full Name" required>
-              </div>
-              <div class="ios-row">
-                <span class="row-icon">💼</span>
-                <input type="text" id="title" placeholder="Job Title / Bio">
+              <h2 id="card-name" class="card-name">Your Name</h2>
+              <p id="card-title" class="card-title">Role / Headline</p>
+
+              <!-- Saved Contact Details -->
+              <div class="card-links" id="card-links">
+                <!-- Dynamically populated -->
               </div>
             </div>
 
-            <!-- Core Contact -->
-            <div class="ios-section-label">CONTACT DETAILS</div>
-            <div class="ios-inset-group">
-              <div class="ios-row">
-                <span class="row-icon">📞</span>
-                <input type="tel" id="phone" placeholder="Phone Number" required>
+            <!-- Profile Action Buttons -->
+            <div class="profile-actions-stack">
+              <button type="button" id="goto-edit-profile-btn" class="ios-action-btn primary-action">
+                ✏️ Edit Profile Details
+              </button>
+              
+              <button type="button" id="goto-mode-settings-btn" class="ios-action-btn secondary-action">
+                ⚙️ Configure Work & Social Modes
+              </button>
+            </div>
+          </div>
+
+          <!-- SUB-VIEW 2: EDIT PROFILE FORM (HIDDEN UNTIL CLICKED) -->
+          <div id="profile-edit-subview" class="subview">
+            <form id="profile-form">
+              
+              <!-- Avatar Edit -->
+              <div class="ios-avatar-section">
+                <div class="avatar-uploader">
+                  <div class="avatar-preview-circle" id="form-avatar-preview">
+                    <span id="form-avatar-fallback">⚡</span>
+                  </div>
+                  <label for="avatar-input" class="photo-badge">📷</label>
+                  <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+                </div>
+                <button type="button" id="remove-photo-btn" class="ios-link-btn" style="display: none;">Remove Photo</button>
               </div>
-              <div class="ios-row">
-                <span class="row-icon">💬</span>
-                <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
+
+              <div class="ios-section-label">IDENTITY</div>
+              <div class="ios-inset-group">
+                <div class="ios-row">
+                  <span class="row-icon">👤</span>
+                  <input type="text" id="name" placeholder="Full Name *" required>
+                </div>
+                <div class="ios-row">
+                  <span class="row-icon">💼</span>
+                  <input type="text" id="title" placeholder="Job Title / Headline">
+                </div>
               </div>
-              <div class="ios-row">
-                <span class="row-icon">✉️</span>
-                <input type="email" id="email" placeholder="Email Address">
+
+              <div class="ios-section-label">CONTACT</div>
+              <div class="ios-inset-group">
+                <div class="ios-row">
+                  <span class="row-icon">📞</span>
+                  <input type="tel" id="phone" placeholder="Phone Number *" required>
+                </div>
+                <div class="ios-row">
+                  <span class="row-icon">💬</span>
+                  <input type="tel" id="whatsapp" placeholder="WhatsApp Number">
+                </div>
+                <div class="ios-row">
+                  <span class="row-icon">✉️</span>
+                  <input type="email" id="email" placeholder="Email Address">
+                </div>
               </div>
+
+              <div class="ios-section-label">SOCIAL PROFILES</div>
+              <div class="ios-inset-group">
+                <div class="ios-row">
+                  <span class="row-icon">📸</span>
+                  <input type="text" id="instagram" placeholder="Instagram Username">
+                </div>
+                <div class="ios-row">
+                  <span class="row-icon">🔗</span>
+                  <input type="url" id="linkedin" placeholder="LinkedIn Profile URL">
+                </div>
+              </div>
+
+              <!-- Custom Links Section -->
+              <div class="custom-links-header">
+                <span class="ios-section-label">CUSTOM EXTRA LINKS</span>
+                <button type="button" id="add-custom-field-btn" class="add-field-btn">
+                  ➕ Add Link
+                </button>
+              </div>
+              
+              <div id="custom-fields-container" class="ios-inset-group" style="display: none;">
+                <!-- Dynamically added links -->
+              </div>
+
+              <div class="btn-container">
+                <button type="submit" id="save-profile-btn" class="ios-action-btn primary-action">
+                  💾 Save Profile Changes
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- SUB-VIEW 3: CONFIGURE WORK & SOCIAL MODES & ADD SECTIONS -->
+          <div id="mode-settings-subview" class="subview">
+            
+            <p class="settings-helper-text">
+              Choose which details to include in each mode when someone scans your QR code:
+            </p>
+
+            <!-- Mode 1: Work Configuration -->
+            <div class="ios-section-label">💼 IN WORK MODE, SHARE:</div>
+            <div class="ios-inset-group" id="work-items-list">
+              <!-- Dynamically rendered checkboxes -->
             </div>
 
-            <!-- Social Links -->
-            <div class="ios-section-label">SOCIAL MEDIA</div>
-            <div class="ios-inset-group">
-              <div class="ios-row">
-                <span class="row-icon">📸</span>
-                <input type="text" id="instagram" placeholder="Instagram Username">
-              </div>
-              <div class="ios-row">
-                <span class="row-icon">🔗</span>
-                <input type="url" id="linkedin" placeholder="LinkedIn Profile URL">
-              </div>
+            <!-- Mode 2: Social Configuration -->
+            <div class="ios-section-label">🎉 IN SOCIAL MODE, SHARE:</div>
+            <div class="ios-inset-group" id="social-items-list">
+              <!-- Dynamically rendered checkboxes -->
             </div>
 
-            <!-- Custom Extra Links Container -->
-            <div class="custom-links-header">
-              <span class="ios-section-label">CUSTOM LINKS</span>
-              <button type="button" id="add-custom-field-btn" class="add-field-btn">
-                ➕ Add Link
+            <!-- Add New Custom Mode / Section -->
+            <div class="custom-links-header" style="margin-top: 24px;">
+              <span class="ios-section-label">CUSTOM SECTIONS / MODES</span>
+              <button type="button" id="add-custom-mode-btn" class="add-field-btn">
+                ➕ Add Section
               </button>
             </div>
             
-            <div id="custom-fields-container" class="ios-inset-group" style="display: none;">
-              <!-- Dynamic user custom fields added here -->
+            <div id="custom-modes-container" class="custom-modes-list">
+              <!-- Dynamic custom modes -->
             </div>
 
             <div class="btn-container">
-              <button type="submit" id="save-profile-btn" class="ios-action-btn primary-action">
-                💾 Save Changes
+              <button type="button" id="save-modes-btn" class="ios-action-btn primary-action">
+                💾 Save Mode Settings
               </button>
             </div>
-          </form>
+          </div>
+
         </div>
       </div>
     </div>
 
-    <!-- ======================================================== -->
-    <!-- SCANNED RESULT MODAL (Popup when QR is scanned)           -->
-    <!-- ======================================================== -->
+    <!-- Scanned Result Modal -->
     <div id="scan-result-modal" class="sheet-overlay">
       <div class="sheet-modal scan-result-sheet">
         <div class="sheet-grabber"></div>
@@ -307,9 +303,7 @@
           <h3 id="scanned-name">Rahul Sharma</h3>
           <p id="scanned-detail" class="scanned-meta">+91 9876543210</p>
           
-          <div id="scanned-actions-container" class="scanned-actions">
-            <!-- Save button & direct links -->
-          </div>
+          <div id="scanned-actions-container" class="scanned-actions"></div>
         </div>
       </div>
     </div>
