@@ -16,6 +16,12 @@
   <!-- Ambient Apple Glow -->
   <div class="ambient-glow"></div>
 
+  <!-- Dynamic Island Floating Toast Notification -->
+  <div id="ios-toast" class="ios-toast">
+    <span id="toast-icon">✨</span>
+    <span id="toast-message">Profile updated</span>
+  </div>
+
   <div class="iphone-shell">
     
     <!-- ======================================================== -->
@@ -31,8 +37,8 @@
           </div>
         </div>
 
-        <h1 id="public-name" class="card-name">Priyanshu Maurya</h1>
-        <p id="public-title" class="card-title">Fullstack Developer</p>
+        <h1 id="public-name" class="card-name">Contact Profile</h1>
+        <p id="public-title" class="card-title">QuickSwap Member</p>
         
         <div class="landing-badge" id="public-badge">
           <span>Shared Contact</span>
@@ -44,15 +50,28 @@
         </div>
 
         <!-- 1-Click Save to Phonebook -->
-        <div class="landing-footer-actions">
-          <button type="button" id="public-download-vcf-btn" class="ios-action-btn apple-save-btn">
-            📥 Save All to Phonebook (.vcf)
-          </button>
-          
-          <a href="./" class="create-own-link" id="create-own-link">
-            ⚡ Create your own QuickSwap card
-          </a>
+        <button type="button" id="public-download-vcf-btn" class="ios-action-btn apple-save-btn">
+          📥 Save All to Phonebook (.vcf)
+        </button>
+
+        <!-- 🤝 TWO-WAY CONTACT EXCHANGE BACK BOX -->
+        <div class="exchange-back-card" id="exchange-back-card">
+          <div class="exchange-header">
+            <h3>👋 Send Your Details Back</h3>
+            <p>Exchange contacts in 1-click via WhatsApp</p>
+          </div>
+          <div class="exchange-form">
+            <input type="text" id="exchange-name" placeholder="Your Name" class="exchange-input">
+            <input type="tel" id="exchange-phone" placeholder="Your Phone / WhatsApp" class="exchange-input">
+            <button type="button" id="exchange-send-btn" class="exchange-btn">
+              💬 Send Back via WhatsApp
+            </button>
+          </div>
         </div>
+
+        <a href="./" class="create-own-link" id="create-own-link">
+          ⚡ Create your own QuickSwap card
+        </a>
 
       </div>
     </div>
@@ -117,28 +136,35 @@
       <section id="myqr-view" class="view-panel">
         
         <!-- Mode Chips -->
-        <div class="ios-section-label" style="text-align: center; margin-left: 0;">CHOOSE WHAT TO SHARE</div>
+        <div class="ios-section-label" style="text-align: center; margin-left: 0;">SELECT SHARING MODE</div>
         <div class="mode-chips-container" id="mode-chips-container">
           <button type="button" class="mode-chip active" data-mode="work">💼 Work</button>
           <button type="button" class="mode-chip" data-mode="social">🎉 Social</button>
           <button type="button" class="mode-chip" data-mode="all">⚡ All</button>
         </div>
 
-        <!-- Sharing QR Sheet (Encodes Direct Web URL!) -->
+        <!-- Sharing QR Sheet (Clickable for Fullscreen!) -->
         <div class="ios-qr-sheet">
           <div class="qr-sheet-header">
             <h3 id="current-mode-title">Work Contact QR</h3>
             <p id="current-mode-summary">Sharing: Phone, Email, LinkedIn</p>
           </div>
           
-          <div class="qr-canvas-wrapper">
+          <div class="qr-canvas-wrapper" id="qr-wrapper-clickable" title="Tap to expand fullscreen">
             <div id="qrcode"></div>
           </div>
+          <p class="qr-tap-hint">Tap QR for fullscreen brightness 🔍</p>
 
-          <div class="qr-sheet-footer">
-            <p class="qr-scan-hint">Scanning this QR directly opens your web card!</p>
-            <button id="test-link-btn" class="ios-action-btn secondary-action" style="margin-top: 8px;">
-              🔗 Preview My Web Card
+          <!-- 1-Tap Copy & Native Share Actions -->
+          <div class="qr-quick-actions">
+            <button type="button" id="copy-link-btn" class="ios-quick-btn">
+              📋 Copy Link
+            </button>
+            <button type="button" id="native-share-btn" class="ios-quick-btn">
+              📤 Share via...
+            </button>
+            <button type="button" id="test-link-btn" class="ios-quick-btn">
+              👁️ Preview Card
             </button>
           </div>
         </div>
@@ -147,7 +173,7 @@
         <div class="profile-peek-box">
           <p>Want to edit details or configure modes?</p>
           <button type="button" id="peek-profile-btn" class="ios-link-pill-btn">
-            👁️ Open Profile & Settings
+            ⚙️ Open Profile & Settings
           </button>
         </div>
 
@@ -294,6 +320,20 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+
+    <!-- FULLSCREEN QR LIGHTBOX MODAL (SUNLIGHT MODE) -->
+    <div id="qr-lightbox-modal" class="sheet-overlay">
+      <div class="lightbox-content">
+        <div class="lightbox-card">
+          <h3 id="lightbox-title">QuickSwap QR</h3>
+          <p>Scan with any Camera</p>
+          <div id="lightbox-qr" class="lightbox-qr-canvas"></div>
+          <button type="button" id="close-lightbox-btn" class="ios-action-btn primary-action" style="margin-top: 18px;">
+            ✕ Close Fullscreen
+          </button>
         </div>
       </div>
     </div>

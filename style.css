@@ -64,8 +64,39 @@ body {
 }
 
 /* ========================================================
+ * APPLE DYNAMIC ISLAND FLOATING TOAST NOTIFICATION
+ * ======================================================== */
+.ios-toast {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px) scale(0.9);
+  background: rgba(28, 28, 30, 0.95);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.86rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ios-toast.toast-show {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* ========================================================
  * VIEW A: PUBLIC SHARED PROFILE LANDING PAGE
- * (Opens directly when someone scans the QR code!)
  * ======================================================== */
 .public-landing-container {
   padding: 10px 0 30px 0;
@@ -98,12 +129,12 @@ body {
   margin-bottom: 22px;
 }
 
-/* Big Clickable Action Cards (Direct WhatsApp, Instagram, Call, etc.) */
+/* Direct Action Cards */
 .direct-actions-grid {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .action-tile {
@@ -115,7 +146,7 @@ body {
   text-decoration: none;
   background: var(--ios-surface-grouped);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .action-tile:active {
@@ -141,7 +172,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Brand specific icon backgrounds */
 .icon-bg-wa { background: rgba(48, 209, 88, 0.18); color: var(--ios-green); }
 .icon-bg-insta { background: linear-gradient(135deg, rgba(225, 48, 108, 0.2), rgba(131, 58, 180, 0.2)); color: #ff5f8f; }
 .icon-bg-phone { background: rgba(10, 132, 255, 0.18); color: var(--ios-blue); }
@@ -169,13 +199,71 @@ body {
   font-weight: 700;
 }
 
-.landing-footer-actions {
+/* 🤝 Two-Way Exchange Card */
+.exchange-back-card {
+  margin-top: 24px;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 18px 16px;
+  text-align: left;
+}
+
+.exchange-header h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--ios-text-primary);
+}
+
+.exchange-header p {
+  font-size: 0.78rem;
+  color: var(--ios-text-secondary);
+  margin-top: 2px;
+  margin-bottom: 14px;
+}
+
+.exchange-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+}
+
+.exchange-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #111113;
+  border: 1px solid #333336;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.exchange-input:focus {
+  border-color: var(--ios-green);
+}
+
+.exchange-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--ios-green);
+  color: #000000;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.exchange-btn:active {
+  transform: scale(0.98);
 }
 
 .create-own-link {
+  display: inline-block;
+  margin-top: 10px;
   color: var(--ios-text-secondary);
   font-size: 0.82rem;
   text-decoration: none;
@@ -295,7 +383,6 @@ body {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
 }
 
-/* Panel visibility */
 .view-panel {
   display: none;
 }
@@ -483,7 +570,7 @@ body {
 .ios-qr-sheet {
   background: #ffffff;
   border-radius: var(--ios-radius-lg);
-  padding: 24px 20px;
+  padding: 22px 18px 18px 18px;
   text-align: center;
   color: #000000;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
@@ -500,24 +587,51 @@ body {
   font-size: 0.8rem;
   color: #636366;
   margin-top: 3px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .qr-canvas-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 185px;
+  min-height: 180px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-.qr-sheet-footer {
-  margin-top: 14px;
+.qr-canvas-wrapper:active {
+  transform: scale(0.97);
 }
 
-.qr-scan-hint {
-  font-size: 0.78rem;
-  color: #636366;
-  font-weight: 500;
+.qr-tap-hint {
+  font-size: 0.76rem;
+  color: #8e8e93;
+  margin-top: 8px;
+  margin-bottom: 14px;
+}
+
+/* 1-Tap Copy & Native Share Row */
+.qr-quick-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ios-quick-btn {
+  flex: 1;
+  padding: 9px 8px;
+  background: #f2f2f7;
+  border: 1px solid #d1d1d6;
+  color: #1c1c1e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ios-quick-btn:active {
+  transform: scale(0.96);
+  background: #e5e5ea;
 }
 
 .profile-peek-box {
@@ -548,6 +662,44 @@ body {
 
 .ios-link-pill-btn:active {
   transform: scale(0.96);
+}
+
+/* ========================================================
+ * FULLSCREEN QR LIGHTBOX (OUTDOOR SUNLIGHT MODE)
+ * ======================================================== */
+.lightbox-content {
+  width: 100%;
+  max-width: 360px;
+  margin: auto;
+  padding: 16px;
+}
+
+.lightbox-card {
+  background: #ffffff;
+  color: #000000;
+  border-radius: 28px;
+  padding: 26px 20px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-card h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.lightbox-card p {
+  font-size: 0.82rem;
+  color: #636366;
+  margin-top: 3px;
+  margin-bottom: 18px;
+}
+
+.lightbox-qr-canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
 }
 
 /* ========================================================

@@ -40,10 +40,17 @@ let activeSharingMode = 'work';
 let html5QrScanner = null;
 let isCameraActive = false;
 let qrCodeInstance = null;
+let lightboxQrInstance = null;
 
 // ==========================================
 // 2. DOM ELEMENTS
 // ==========================================
+// Floating Toast Notification
+const iosToast = document.getElementById('ios-toast');
+const toastIcon = document.getElementById('toast-icon');
+const toastMessage = document.getElementById('toast-message');
+let toastTimer = null;
+
 // Views
 const publicLandingView = document.getElementById('public-landing-view');
 const ownerAppContainer = document.getElementById('owner-app-container');
@@ -55,6 +62,11 @@ const publicTitle = document.getElementById('public-title');
 const publicBadge = document.getElementById('public-badge');
 const publicActionsList = document.getElementById('public-actions-list');
 const publicDownloadVcfBtn = document.getElementById('public-download-vcf-btn');
+
+// 2-Way Exchange Elements
+const exchangeName = document.getElementById('exchange-name');
+const exchangePhone = document.getElementById('exchange-phone');
+const exchangeSendBtn = document.getElementById('exchange-send-btn');
 
 // Main Owner Navigation
 const navBtnScanner = document.getElementById('nav-btn-scanner');
@@ -112,8 +124,17 @@ const modeChipsContainer = document.getElementById('mode-chips-container');
 const currentModeTitle = document.getElementById('current-mode-title');
 const currentModeSummary = document.getElementById('current-mode-summary');
 const qrcodeDiv = document.getElementById('qrcode');
+const qrWrapperClickable = document.getElementById('qr-wrapper-clickable');
+const copyLinkBtn = document.getElementById('copy-link-btn');
+const nativeShareBtn = document.getElementById('native-share-btn');
 const testLinkBtn = document.getElementById('test-link-btn');
 const peekProfileBtn = document.getElementById('peek-profile-btn');
+
+// Lightbox Elements
+const qrLightboxModal = document.getElementById('qr-lightbox-modal');
+const lightboxTitle = document.getElementById('lightbox-title');
+const lightboxQr = document.getElementById('lightbox-qr');
+const closeLightboxBtn = document.getElementById('close-lightbox-btn');
 
 // Camera & Scanner Elements
 const toggleCameraBtn = document.getElementById('toggle-camera-btn');
@@ -121,11 +142,34 @@ const cameraBtnText = document.getElementById('camera-btn-text');
 const qrFileInput = document.getElementById('qr-file-input');
 const laserLine = document.getElementById('laser-line');
 
-// Variable to store current scanned contact payload for vCard export
+// Currently active scanned payload
 let currentScannedPayload = null;
 
 // ==========================================
-// 3. CHECK FOR SHARED CONTACT VIA URL HASH (#data=)
+// 3. UX UTILITIES (TOAST & HAPTICS)
+// ==========================================
+function showToast(message, icon = '✨') {
+  if (!iosToast) return;
+  toastMessage.textContent = message;
+  toastIcon.textContent = icon;
+  iosToast.classList.add('toast-show');
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    iosToast.classList.remove('toast-show');
+  }, 2600);
+}
+
+function triggerHaptic(duration = 15) {
+  try {
+    if (navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
+  } catch (e) {}
+}
+
+// ==========================================
+// 4. CHECK FOR SHARED CONTACT VIA URL HASH (#data=)
 // ==========================================
 function checkUrlForSharedContact() {
   if (window.location.hash.startsWith('#data=')) {
@@ -143,20 +187,17 @@ function checkUrlForSharedContact() {
 }
 
 // ==========================================
-// 4. RENDER PUBLIC LANDING PAGE (Direct Click Links!)
+// 5. RENDER PUBLIC LANDING PAGE & 2-WAY SWAP
 // ==========================================
 function renderPublicLandingPage(data) {
   currentScannedPayload = data;
 
-  // Hide owner app, show public landing page
   ownerAppContainer.style.display = 'none';
   publicLandingView.style.display = 'block';
 
-  // Name & Title
   publicName.textContent = data.n || 'Contact Profile';
   publicTitle.textContent = data.t || 'QuickSwap Member';
 
-  // Avatar
   if (data.a) {
     publicAvatar.innerHTML = `<img src="${data.a}" alt="Photo">`;
   } else {
@@ -164,17 +205,14 @@ function renderPublicLandingPage(data) {
     publicAvatar.innerHTML = `<span>${initial}</span>`;
   }
 
-  // Mode Badge
   publicBadge.textContent = data.m ? `${data.m.toUpperCase()} PROFILE` : 'SHARED PROFILE';
-
-  // DIRECT CLICK ACTION TILES
   publicActionsList.innerHTML = '';
 
-  // 1. Instagram Direct Click
+  // 1. Instagram
   if (data.i) {
     const cleanInsta = data.i.replace('@', '').trim();
     publicActionsList.innerHTML += `
-      <a href="https://instagram.com/${cleanInsta}" target="_blank" rel="noopener noreferrer" class="action-tile">
+      <a href="https://instagram.com/${cleanInsta}" target="_blank" rel="noopener noreferrer" class="action-tile" onclick="triggerHaptic()">
         <div class="action-tile-left">
           <div class="action-tile-icon icon-bg-insta">📸</div>
           <div class="action-tile-text">
@@ -187,11 +225,11 @@ function renderPublicLandingPage(data) {
     `;
   }
 
-  // 2. WhatsApp Direct Chat
+  // 2. WhatsApp
   if (data.w) {
     const cleanWA = data.w.replace(/[^0-9]/g, '');
     publicActionsList.innerHTML += `
-      <a href="https://wa.me/${cleanWA}" target="_blank" rel="noopener noreferrer" class="action-tile">
+      <a href="https://wa.me/${cleanWA}" target="_blank" rel="noopener noreferrer" class="action-tile" onclick="triggerHaptic()">
         <div class="action-tile-left">
           <div class="action-tile-icon icon-bg-wa">💬</div>
           <div class="action-tile-text">
@@ -204,10 +242,10 @@ function renderPublicLandingPage(data) {
     `;
   }
 
-  // 3. Phone Call Direct Dialer
+  // 3. Phone Call
   if (data.p) {
     publicActionsList.innerHTML += `
-      <a href="tel:${data.p}" class="action-tile">
+      <a href="tel:${data.p}" class="action-tile" onclick="triggerHaptic()">
         <div class="action-tile-left">
           <div class="action-tile-icon icon-bg-phone">📞</div>
           <div class="action-tile-text">
@@ -220,10 +258,10 @@ function renderPublicLandingPage(data) {
     `;
   }
 
-  // 4. Email Direct Mail
+  // 4. Email
   if (data.e) {
     publicActionsList.innerHTML += `
-      <a href="mailto:${data.e}" class="action-tile">
+      <a href="mailto:${data.e}" class="action-tile" onclick="triggerHaptic()">
         <div class="action-tile-left">
           <div class="action-tile-icon icon-bg-email">✉️</div>
           <div class="action-tile-text">
@@ -236,10 +274,10 @@ function renderPublicLandingPage(data) {
     `;
   }
 
-  // 5. LinkedIn Direct Profile
+  // 5. LinkedIn
   if (data.l) {
     publicActionsList.innerHTML += `
-      <a href="${data.l}" target="_blank" rel="noopener noreferrer" class="action-tile">
+      <a href="${data.l}" target="_blank" rel="noopener noreferrer" class="action-tile" onclick="triggerHaptic()">
         <div class="action-tile-left">
           <div class="action-tile-icon icon-bg-linkedin">💼</div>
           <div class="action-tile-text">
@@ -252,12 +290,12 @@ function renderPublicLandingPage(data) {
     `;
   }
 
-  // 6. Custom Links (GitHub, Website, etc.)
+  // 6. Custom Links
   if (data.c && Array.isArray(data.c)) {
     data.c.forEach(item => {
       if (item.v) {
         publicActionsList.innerHTML += `
-          <a href="${item.v}" target="_blank" rel="noopener noreferrer" class="action-tile">
+          <a href="${item.v}" target="_blank" rel="noopener noreferrer" class="action-tile" onclick="triggerHaptic()">
             <div class="action-tile-left">
               <div class="action-tile-icon icon-bg-custom">🔗</div>
               <div class="action-tile-text">
@@ -273,8 +311,38 @@ function renderPublicLandingPage(data) {
   }
 }
 
+// 2-Way Contact Exchange Action
+exchangeSendBtn.addEventListener('click', () => {
+  triggerHaptic(20);
+  const name = exchangeName.value.trim();
+  const phone = exchangePhone.value.trim();
+
+  if (!name || !phone) {
+    showToast('Please enter your name & phone!', '⚠️');
+    return;
+  }
+
+  const ownerName = currentScannedPayload ? currentScannedPayload.n : 'Friend';
+  const ownerWA = currentScannedPayload && (currentScannedPayload.w || currentScannedPayload.p)
+    ? (currentScannedPayload.w || currentScannedPayload.p).replace(/[^0-9]/g, '')
+    : '';
+
+  const messageText = `Hi ${ownerName}! I just scanned your QuickSwap card. Here are my contact details:\n👤 Name: ${name}\n📞 Phone: ${phone}\n(Shared via QuickSwap)`;
+
+  if (ownerWA) {
+    const waUrl = `https://wa.me/${ownerWA}?text=${encodeURIComponent(messageText)}`;
+    window.open(waUrl, '_blank');
+    showToast('Redirecting to WhatsApp...', '💬');
+  } else {
+    // Fallback: Copy to clipboard
+    navigator.clipboard.writeText(messageText);
+    showToast('Details copied to clipboard!', '📋');
+  }
+});
+
 // Download vCard from Public Landing Page
 publicDownloadVcfBtn.addEventListener('click', () => {
+  triggerHaptic(20);
   if (!currentScannedPayload) return;
   const p = currentScannedPayload;
 
@@ -292,7 +360,6 @@ publicDownloadVcfBtn.addEventListener('click', () => {
       if (item.v) vcard += `URL;TYPE=${item.l || 'Link'}:${item.v}\n`;
     });
   }
-
   vcard += `END:VCARD`;
 
   const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
@@ -304,10 +371,12 @@ publicDownloadVcfBtn.addEventListener('click', () => {
   downloadLink.click();
   document.body.removeChild(downloadLink);
   URL.revokeObjectURL(url);
+
+  showToast('Contact file downloaded!', '📥');
 });
 
 // ==========================================
-// 5. GENERATE REAL WEB LINK QR CODE 🌐
+// 6. GENERATE REAL WEB LINK QR CODE 🌐
 // ==========================================
 function getActiveModeFields() {
   if (activeSharingMode === 'work') return { title: 'Work Contact QR', fields: modeConfigs.work.fields };
@@ -323,7 +392,6 @@ function getActiveModeFields() {
 function generateShareableWebUrl() {
   const modeInfo = getActiveModeFields();
 
-  // Create lightweight payload of active fields only
   const payload = {
     m: activeSharingMode,
     n: userProfile.name || '',
@@ -336,14 +404,11 @@ function generateShareableWebUrl() {
   if (modeInfo.fields.includes('email') && userProfile.email) payload.e = userProfile.email;
   if (modeInfo.fields.includes('linkedin') && userProfile.linkedin) payload.l = userProfile.linkedin;
 
-  // Custom links if in 'all' mode
   if (activeSharingMode === 'all' && userProfile.customLinks.length > 0) {
     payload.c = userProfile.customLinks.filter(x => x.value);
   }
 
   const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
-  
-  // Real URL that any camera can open
   const baseUrl = window.location.href.split('#')[0];
   return `${baseUrl}#data=${encodedData}`;
 }
@@ -359,30 +424,93 @@ function renderSharingQr() {
     .join(', ');
   currentModeSummary.textContent = activeFieldNames ? `Sharing: ${activeFieldNames}` : 'Nothing selected in this mode';
 
-  // Real Web URL into the QR Code!
   const targetWebUrl = generateShareableWebUrl();
 
   qrcodeDiv.innerHTML = '';
   qrCodeInstance = new QRCode(qrcodeDiv, {
     text: targetWebUrl,
-    width: 180,
-    height: 180,
+    width: 175,
+    height: 175,
     colorDark: '#000000',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
 }
 
+// 1-Tap Copy Link Button
+copyLinkBtn.addEventListener('click', async () => {
+  triggerHaptic(20);
+  const targetUrl = generateShareableWebUrl();
+  try {
+    await navigator.clipboard.writeText(targetUrl);
+    showToast('Card link copied to clipboard!', '📋');
+  } catch (err) {
+    showToast('Copied: ' + targetUrl.substring(0, 30) + '...', '📋');
+  }
+});
+
+// Native Web Share API Button
+nativeShareBtn.addEventListener('click', async () => {
+  triggerHaptic(20);
+  const targetUrl = generateShareableWebUrl();
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `${userProfile.name || 'QuickSwap'} Contact Card`,
+        text: `Here is my contact profile on QuickSwap:`,
+        url: targetUrl
+      });
+      showToast('Shared successfully!', '📤');
+    } catch (err) {}
+  } else {
+    // Fallback: Copy link
+    await navigator.clipboard.writeText(targetUrl);
+    showToast('Link copied to share!', '📋');
+  }
+});
+
 // Preview own web card button
 testLinkBtn.addEventListener('click', () => {
+  triggerHaptic(15);
   const targetUrl = generateShareableWebUrl();
   window.open(targetUrl, '_blank');
 });
 
+// Fullscreen Lightbox Trigger
+qrWrapperClickable.addEventListener('click', () => {
+  triggerHaptic(15);
+  const targetUrl = generateShareableWebUrl();
+  lightboxTitle.textContent = getActiveModeFields().title;
+  lightboxQr.innerHTML = '';
+
+  lightboxQrInstance = new QRCode(lightboxQr, {
+    text: targetUrl,
+    width: 230,
+    height: 230,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  qrLightboxModal.classList.add('active');
+});
+
+closeLightboxBtn.addEventListener('click', () => {
+  triggerHaptic(15);
+  qrLightboxModal.classList.remove('active');
+});
+
+qrLightboxModal.addEventListener('click', (e) => {
+  if (e.target === qrLightboxModal) {
+    qrLightboxModal.classList.remove('active');
+  }
+});
+
 // ==========================================
-// 6. MAIN NAVIGATION: [ SCANNER ] vs [ MY QR ]
+// 7. MAIN NAVIGATION: [ SCANNER ] vs [ MY QR ]
 // ==========================================
 function switchMainView(view) {
+  triggerHaptic(15);
   if (view === 'scanner') {
     navBtnScanner.classList.add('active');
     navBtnMyQr.classList.remove('active');
@@ -404,14 +532,16 @@ navBtnScanner.addEventListener('click', () => switchMainView('scanner'));
 navBtnMyQr.addEventListener('click', () => switchMainView('myqr'));
 
 // ==========================================
-// 7. PROFILE DRAWER NAVIGATION & SUBVIEWS
+// 8. PROFILE DRAWER NAVIGATION & SUBVIEWS
 // ==========================================
 function openProfileSheet(subview = 'card') {
+  triggerHaptic(15);
   profileSheetOverlay.classList.add('active');
   switchProfileSubview(subview);
 }
 
 function closeProfileSheet() {
+  triggerHaptic(15);
   profileSheetOverlay.classList.remove('active');
   setTimeout(() => switchProfileSubview('card'), 300);
 }
@@ -425,6 +555,7 @@ profileSheetOverlay.addEventListener('click', (e) => {
 });
 
 function switchProfileSubview(subview) {
+  triggerHaptic(15);
   profileCardSubview.classList.remove('active-subview');
   profileEditSubview.classList.remove('active-subview');
   modeSettingsSubview.classList.remove('active-subview');
@@ -451,7 +582,7 @@ gotoModeSettingsBtn.addEventListener('click', () => switchProfileSubview('settin
 sheetBackBtn.addEventListener('click', () => switchProfileSubview('card'));
 
 // ==========================================
-// 8. DIGITAL CARD RENDERING (Screenshot Look!)
+// 9. DIGITAL CARD RENDERING
 // ==========================================
 function renderDigitalCard() {
   if (userProfile.avatar) {
@@ -507,7 +638,7 @@ function renderDigitalCard() {
 }
 
 // ==========================================
-// 9. EDIT FORM & "+ ADD LINK"
+// 10. EDIT FORM & "+ ADD LINK"
 // ==========================================
 function renderCustomFields() {
   customFieldsContainer.innerHTML = '';
@@ -529,6 +660,7 @@ function renderCustomFields() {
     row.querySelector('.custom-label-input').addEventListener('input', (e) => userProfile.customLinks[index].label = e.target.value);
     row.querySelector('.custom-val-input').addEventListener('input', (e) => userProfile.customLinks[index].value = e.target.value);
     row.querySelector('.delete-row-btn').addEventListener('click', () => {
+      triggerHaptic(15);
       userProfile.customLinks.splice(index, 1);
       renderCustomFields();
     });
@@ -538,6 +670,7 @@ function renderCustomFields() {
 }
 
 addCustomFieldBtn.addEventListener('click', () => {
+  triggerHaptic(15);
   userProfile.customLinks.push({ label: 'Link', value: '' });
   renderCustomFields();
 });
@@ -550,18 +683,22 @@ avatarInput.addEventListener('change', (e) => {
   reader.onload = function(event) {
     userProfile.avatar = event.target.result;
     renderDigitalCard();
+    showToast('Photo uploaded!', '📸');
   };
   reader.readAsDataURL(file);
 });
 
 removePhotoBtn.addEventListener('click', () => {
+  triggerHaptic(15);
   userProfile.avatar = '';
   avatarInput.value = '';
   renderDigitalCard();
+  showToast('Photo removed', '🗑️');
 });
 
 profileForm.addEventListener('submit', (e) => {
   e.preventDefault();
+  triggerHaptic(20);
 
   userProfile.name = nameInput.value.trim();
   userProfile.title = titleInput.value.trim();
@@ -576,11 +713,11 @@ profileForm.addEventListener('submit', (e) => {
   renderSharingQr();
 
   switchProfileSubview('card');
-  alert('Profile updated successfully! ✨');
+  showToast('Profile updated successfully!', '✨');
 });
 
 // ==========================================
-// 10. CONFIGURE WORK & SOCIAL MODES
+// 11. CONFIGURE WORK & SOCIAL MODES
 // ==========================================
 const availableFields = [
   { key: 'phone', label: '📞 Phone Number' },
@@ -635,6 +772,7 @@ function renderCustomModesList() {
 
     card.querySelector('input[type="text"]').addEventListener('input', (e) => customModes[index].name = e.target.value);
     card.querySelector('.delete-row-btn').addEventListener('click', () => {
+      triggerHaptic(15);
       customModes.splice(index, 1);
       renderCustomModesList();
     });
@@ -655,11 +793,13 @@ function renderCustomModesList() {
 }
 
 addCustomModeBtn.addEventListener('click', () => {
+  triggerHaptic(15);
   customModes.push({ id: 'custom_' + Date.now(), name: 'New Section', fields: ['phone', 'instagram'] });
   renderCustomModesList();
 });
 
 saveModesBtn.addEventListener('click', () => {
+  triggerHaptic(20);
   modeConfigs.work.fields = [];
   document.querySelectorAll('#work-items-list input[type="checkbox"]:checked').forEach(c => {
     modeConfigs.work.fields.push(c.dataset.field);
@@ -674,7 +814,7 @@ saveModesBtn.addEventListener('click', () => {
   renderModeChips();
   renderSharingQr();
   switchProfileSubview('card');
-  alert('Mode settings saved! ✨');
+  showToast('Mode settings saved!', '⚙️');
 });
 
 function renderModeChips() {
@@ -694,17 +834,20 @@ function renderModeChips() {
 
   modeChipsContainer.querySelectorAll('.mode-chip').forEach(btn => {
     btn.addEventListener('click', () => {
+      triggerHaptic(15);
       activeSharingMode = btn.dataset.mode;
       renderModeChips();
       renderSharingQr();
+      showToast(`Switched to ${activeSharingMode.toUpperCase()} mode`, '🔄');
     });
   });
 }
 
 // ==========================================
-// 11. PAYTM CAMERA SCANNER ENGINE
+// 12. PAYTM CAMERA SCANNER ENGINE
 // ==========================================
 async function startCamera() {
+  triggerHaptic(15);
   if (!html5QrScanner) html5QrScanner = new Html5Qrcode("reader");
 
   try {
@@ -718,8 +861,9 @@ async function startCamera() {
     isCameraActive = true;
     cameraBtnText.textContent = "🛑 Stop Camera";
     laserLine.style.display = "block";
+    showToast('Camera active', '📷');
   } catch (err) {
-    alert("Camera permission denied or camera not available.");
+    showToast('Camera permission denied', '⚠️');
   }
 }
 
@@ -749,36 +893,36 @@ qrFileInput.addEventListener('change', async (e) => {
     const decodedText = await html5QrScanner.scanFile(file, true);
     onScanSuccess(decodedText);
   } catch (err) {
-    alert("No QR code found in this photo.");
+    showToast('No QR code found in photo', '❌');
   }
 });
 
 function onScanSuccess(decodedText) {
+  triggerHaptic(30);
   stopCamera();
 
-  // If scanned text is a QuickSwap Web Card with hash data!
   if (decodedText.includes('#data=')) {
     const hash = decodedText.split('#data=')[1];
     try {
       const decodedJson = decodeURIComponent(escape(atob(decodeURIComponent(hash))));
       const sharedContact = JSON.parse(decodedJson);
       renderPublicLandingPage(sharedContact);
+      showToast('Contact card loaded! 🎉', '⚡');
       return;
     } catch (e) {
       console.error(e);
     }
   }
 
-  // Fallback if someone scanned standard text/url
   if (decodedText.startsWith('http')) {
     window.open(decodedText, '_blank');
   } else {
-    alert("Scanned info: " + decodedText);
+    showToast('Scanned: ' + decodedText.substring(0, 25), '📱');
   }
 }
 
 // ==========================================
-// 12. LOCALSTORAGE PERSISTENCE & INIT
+// 13. LOCALSTORAGE & BOOTSTRAP
 // ==========================================
 function saveToLocalStorage() {
   localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
@@ -787,9 +931,8 @@ function saveToLocalStorage() {
 }
 
 function loadSavedData() {
-  // First check if user opened a shared link!
   if (checkUrlForSharedContact()) {
-    return; // Show public landing page directly!
+    return;
   }
 
   const savedProfile = localStorage.getItem('quickswap_profile');
@@ -819,5 +962,4 @@ function loadSavedData() {
   renderSharingQr();
 }
 
-// Initialize on launch
 loadSavedData();
