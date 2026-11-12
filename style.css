@@ -64,6 +64,129 @@ body {
 }
 
 /* ========================================================
+ * VIEW A: PUBLIC SHARED PROFILE LANDING PAGE
+ * (Opens directly when someone scans the QR code!)
+ * ======================================================== */
+.public-landing-container {
+  padding: 10px 0 30px 0;
+  animation: publicFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes publicFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.public-card {
+  background: linear-gradient(175deg, rgba(32, 32, 38, 0.98) 0%, rgba(14, 14, 18, 0.98) 100%);
+  border-radius: 28px;
+  padding: 28px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+}
+
+.landing-badge {
+  display: inline-block;
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--ios-cyan);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 22px;
+}
+
+/* Big Clickable Action Cards (Direct WhatsApp, Instagram, Call, etc.) */
+.direct-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.action-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 16px;
+  text-decoration: none;
+  background: var(--ios-surface-grouped);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.action-tile:active {
+  transform: scale(0.97);
+  background: var(--ios-surface-secondary);
+}
+
+.action-tile-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.action-tile-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+/* Brand specific icon backgrounds */
+.icon-bg-wa { background: rgba(48, 209, 88, 0.18); color: var(--ios-green); }
+.icon-bg-insta { background: linear-gradient(135deg, rgba(225, 48, 108, 0.2), rgba(131, 58, 180, 0.2)); color: #ff5f8f; }
+.icon-bg-phone { background: rgba(10, 132, 255, 0.18); color: var(--ios-blue); }
+.icon-bg-email { background: rgba(255, 159, 10, 0.18); color: var(--ios-orange); }
+.icon-bg-linkedin { background: rgba(10, 102, 194, 0.2); color: #0077b5; }
+.icon-bg-custom { background: rgba(191, 90, 242, 0.18); color: var(--ios-purple); }
+
+.action-tile-text strong {
+  display: block;
+  font-size: 0.94rem;
+  color: var(--ios-text-primary);
+  font-weight: 600;
+}
+
+.action-tile-text span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ios-text-secondary);
+  margin-top: 1px;
+}
+
+.action-tile-arrow {
+  font-size: 1.1rem;
+  color: var(--ios-text-tertiary);
+  font-weight: 700;
+}
+
+.landing-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.create-own-link {
+  color: var(--ios-text-secondary);
+  font-size: 0.82rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.create-own-link:hover {
+  color: var(--ios-cyan);
+}
+
+/* ========================================================
  * TOP BAR: BRAND + PROFILE AVATAR BUTTON
  * ======================================================== */
 .top-bar {
@@ -224,7 +347,6 @@ body {
   border-radius: 24px;
 }
 
-/* Animated Laser Beam */
 .laser-scanner {
   position: absolute;
   top: 0;
@@ -245,7 +367,6 @@ body {
   100% { top: 8%; opacity: 0.3; }
 }
 
-/* Corner Brackets */
 .corner-bracket {
   position: absolute;
   width: 28px;
@@ -328,7 +449,7 @@ body {
 }
 
 /* ========================================================
- * VIEW 2: MY QR CODE HUB (FOCUSED ON SHARING)
+ * VIEW 2: MY QR CODE HUB
  * ======================================================== */
 .mode-chips-container {
   display: flex;
@@ -390,7 +511,13 @@ body {
 }
 
 .qr-sheet-footer {
-  margin-top: 18px;
+  margin-top: 14px;
+}
+
+.qr-scan-hint {
+  font-size: 0.78rem;
+  color: #636366;
+  font-weight: 500;
 }
 
 .profile-peek-box {
@@ -518,7 +645,6 @@ body {
   overflow-y: auto;
 }
 
-/* Subviews inside the sheet */
 .subview {
   display: none;
 }
@@ -647,9 +773,7 @@ body {
   font-weight: 700;
 }
 
-/* ========================================================
- * FORM & INPUTS (SUBVIEW 2)
- * ======================================================== */
+/* Form Styles */
 .ios-avatar-section {
   text-align: center;
   margin-bottom: 16px;
@@ -753,7 +877,6 @@ body {
   height: 46px;
 }
 
-/* Custom Links Header */
 .custom-links-header {
   display: flex;
   align-items: center;
@@ -796,9 +919,6 @@ body {
   cursor: pointer;
 }
 
-/* ========================================================
- * MODE CONFIGURATION CHECKBOXES (SUBVIEW 3)
- * ======================================================== */
 .settings-helper-text {
   font-size: 0.82rem;
   color: var(--ios-text-secondary);
@@ -858,30 +978,4 @@ body {
   font-size: 0.95rem;
   font-weight: 700;
   outline: none;
-}
-
-/* Scanned Result Sheet */
-.scan-result-body {
-  text-align: center;
-  padding: 24px 20px;
-}
-
-.result-avatar {
-  margin: 0 auto 12px auto;
-  width: 70px;
-  height: 70px;
-  font-size: 1.8rem;
-}
-
-.scanned-meta {
-  color: var(--ios-text-secondary);
-  font-size: 0.9rem;
-  margin-top: 4px;
-  margin-bottom: 20px;
-}
-
-.scanned-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }

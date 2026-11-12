@@ -18,131 +18,159 @@
 
   <div class="iphone-shell">
     
-    <!-- Top Navigation Bar -->
-    <header class="top-bar">
-      <div class="brand-group">
-        <span class="pulse-indicator"></span>
-        <span class="brand-text">QuickSwap</span>
-      </div>
-
-      <!-- Top Right Profile Avatar Button -->
-      <button type="button" id="open-profile-btn" class="profile-header-btn" title="View Profile & Settings">
-        <div class="header-avatar-circle" id="header-avatar-circle">
-          <span id="header-avatar-fallback">⚡</span>
-        </div>
-      </button>
-    </header>
-
-    <!-- Main Navigation: [ 📷 Scan Camera ] vs [ 📱 My QR Code ] -->
-    <nav class="main-segmented-nav">
-      <button id="nav-btn-scanner" class="segmented-tab active">
-        <span class="tab-icon">📷</span> Scan Camera
-      </button>
-      <button id="nav-btn-myqr" class="segmented-tab">
-        <span class="tab-icon">📱</span> My QR Code
-      </button>
-    </nav>
-
     <!-- ======================================================== -->
-    <!-- VIEW 1: PAYTM CAMERA SCANNER VIEW (DEFAULT HOME)         -->
+    <!-- VIEW A: PUBLIC SHARED PROFILE LANDING PAGE               -->
+    <!-- (Jab koi camera se QR scan karega toh YEH PAGE khulega)  -->
     <!-- ======================================================== -->
-    <main id="scanner-view" class="view-panel active-view">
-      <div class="scanner-container">
+    <div id="public-landing-view" class="public-landing-container" style="display: none;">
+      <div class="public-card">
         
-        <div class="scanner-frame">
-          <div id="reader" class="camera-stream"></div>
-          
-          <!-- Laser Beam Animation -->
-          <div class="laser-scanner" id="laser-line"></div>
-
-          <!-- Brackets -->
-          <div class="corner-bracket top-left"></div>
-          <div class="corner-bracket top-right"></div>
-          <div class="corner-bracket bottom-left"></div>
-          <div class="corner-bracket bottom-right"></div>
+        <div class="card-avatar-wrapper">
+          <div class="avatar" id="public-avatar">
+            <span id="public-avatar-fallback">⚡</span>
+          </div>
         </div>
 
-        <div class="scanner-actions">
-          <button id="toggle-camera-btn" class="ios-pill-btn">
-            <span id="camera-btn-text">📷 Open Camera</span>
+        <h1 id="public-name" class="card-name">Priyanshu Maurya</h1>
+        <p id="public-title" class="card-title">Fullstack Developer</p>
+        
+        <div class="landing-badge" id="public-badge">
+          <span>Shared Contact</span>
+        </div>
+
+        <!-- Big Clickable Direct Action Buttons -->
+        <div class="direct-actions-grid" id="public-actions-list">
+          <!-- Dynamically populated with direct Instagram, WhatsApp, Phone, etc. -->
+        </div>
+
+        <!-- 1-Click Save to Phonebook -->
+        <div class="landing-footer-actions">
+          <button type="button" id="public-download-vcf-btn" class="ios-action-btn apple-save-btn">
+            📥 Save All to Phonebook (.vcf)
           </button>
           
-          <label for="qr-file-input" class="ios-pill-btn secondary">
-            <span>🖼️ Scan from Photos</span>
-            <input type="file" id="qr-file-input" accept="image/*" style="display: none;">
-          </label>
+          <a href="./" class="create-own-link" id="create-own-link">
+            ⚡ Create your own QuickSwap card
+          </a>
         </div>
 
-        <p class="scanner-tip">Point your camera at any QuickSwap, vCard, or Contact QR code</p>
       </div>
-    </main>
+    </div>
 
     <!-- ======================================================== -->
-    <!-- VIEW 2: MY QR CODE HUB (CLEAN & FAST FOR SHARING)        -->
+    <!-- VIEW B: OWNER APP VIEW (CAMERA SCANNER & MY QR)          -->
     <!-- ======================================================== -->
-    <section id="myqr-view" class="view-panel">
+    <div id="owner-app-container">
       
-      <!-- Instant Mode Switcher (Work vs Social vs All) -->
-      <div class="ios-section-label" style="text-align: center; margin-left: 0;">CHOOSE WHAT TO SHARE</div>
-      <div class="mode-chips-container" id="mode-chips-container">
-        <button type="button" class="mode-chip active" data-mode="work">
-          💼 Work
-        </button>
-        <button type="button" class="mode-chip" data-mode="social">
-          🎉 Social
-        </button>
-        <button type="button" class="mode-chip" data-mode="all">
-          ⚡ All Details
-        </button>
-      </div>
-
-      <!-- Live Sharing QR Sheet -->
-      <div class="ios-qr-sheet">
-        <div class="qr-sheet-header">
-          <h3 id="current-mode-title">Work Contact QR</h3>
-          <p id="current-mode-summary">Sharing: Phone, Email, LinkedIn</p>
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="brand-group">
+          <span class="pulse-indicator"></span>
+          <span class="brand-text">QuickSwap</span>
         </div>
+
+        <!-- Top Right Profile Avatar Button -->
+        <button type="button" id="open-profile-btn" class="profile-header-btn" title="View Profile & Settings">
+          <div class="header-avatar-circle" id="header-avatar-circle">
+            <span id="header-avatar-fallback">⚡</span>
+          </div>
+        </button>
+      </header>
+
+      <!-- Main Navigation: [ 📷 Scan Camera ] vs [ 📱 My QR Code ] -->
+      <nav class="main-segmented-nav">
+        <button id="nav-btn-scanner" class="segmented-tab active">
+          <span class="tab-icon">📷</span> Scan Camera
+        </button>
+        <button id="nav-btn-myqr" class="segmented-tab">
+          <span class="tab-icon">📱</span> My QR Code
+        </button>
+      </nav>
+
+      <!-- 1. CAMERA SCANNER VIEW -->
+      <main id="scanner-view" class="view-panel active-view">
+        <div class="scanner-container">
+          <div class="scanner-frame">
+            <div id="reader" class="camera-stream"></div>
+            <div class="laser-scanner" id="laser-line"></div>
+            <div class="corner-bracket top-left"></div>
+            <div class="corner-bracket top-right"></div>
+            <div class="corner-bracket bottom-left"></div>
+            <div class="corner-bracket bottom-right"></div>
+          </div>
+
+          <div class="scanner-actions">
+            <button id="toggle-camera-btn" class="ios-pill-btn">
+              <span id="camera-btn-text">📷 Open Camera</span>
+            </button>
+            <label for="qr-file-input" class="ios-pill-btn secondary">
+              <span>🖼️ Scan from Photos</span>
+              <input type="file" id="qr-file-input" accept="image/*" style="display: none;">
+            </label>
+          </div>
+
+          <p class="scanner-tip">Point camera at any QuickSwap, vCard, or Contact QR</p>
+        </div>
+      </main>
+
+      <!-- 2. MY QR CODE VIEW -->
+      <section id="myqr-view" class="view-panel">
         
-        <div class="qr-canvas-wrapper">
-          <div id="qrcode"></div>
+        <!-- Mode Chips -->
+        <div class="ios-section-label" style="text-align: center; margin-left: 0;">CHOOSE WHAT TO SHARE</div>
+        <div class="mode-chips-container" id="mode-chips-container">
+          <button type="button" class="mode-chip active" data-mode="work">💼 Work</button>
+          <button type="button" class="mode-chip" data-mode="social">🎉 Social</button>
+          <button type="button" class="mode-chip" data-mode="all">⚡ All</button>
         </div>
 
-        <div class="qr-sheet-footer">
-          <button id="download-vcf-btn" class="ios-action-btn apple-save-btn">
-            📥 Download This Contact (.vcf)
+        <!-- Sharing QR Sheet (Encodes Direct Web URL!) -->
+        <div class="ios-qr-sheet">
+          <div class="qr-sheet-header">
+            <h3 id="current-mode-title">Work Contact QR</h3>
+            <p id="current-mode-summary">Sharing: Phone, Email, LinkedIn</p>
+          </div>
+          
+          <div class="qr-canvas-wrapper">
+            <div id="qrcode"></div>
+          </div>
+
+          <div class="qr-sheet-footer">
+            <p class="qr-scan-hint">Scanning this QR directly opens your web card!</p>
+            <button id="test-link-btn" class="ios-action-btn secondary-action" style="margin-top: 8px;">
+              🔗 Preview My Web Card
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Peek Link -->
+        <div class="profile-peek-box">
+          <p>Want to edit details or configure modes?</p>
+          <button type="button" id="peek-profile-btn" class="ios-link-pill-btn">
+            👁️ Open Profile & Settings
           </button>
         </div>
-      </div>
 
-      <!-- Quick Card Peek Link -->
-      <div class="profile-peek-box">
-        <p>Want to see how your card looks?</p>
-        <button type="button" id="peek-profile-btn" class="ios-link-pill-btn">
-          👁️ View & Edit My Profile Card
-        </button>
-      </div>
+      </section>
 
-    </section>
+    </div>
 
     <!-- ======================================================== -->
-    <!-- PROFILE & SETTINGS SLIDE-UP DRAWER (THE HEART ❤️)        -->
+    <!-- SLIDE-UP PROFILE DRAWER / SHEET                          -->
     <!-- ======================================================== -->
     <div id="profile-sheet-overlay" class="sheet-overlay">
       <div class="sheet-modal">
         <div class="sheet-grabber"></div>
 
-        <!-- Sheet Header with Back & Close -->
         <div class="sheet-header">
-          <button type="button" id="sheet-back-btn" class="sheet-back-btn" style="display: none;">
-            ‹ Back
-          </button>
+          <button type="button" id="sheet-back-btn" class="sheet-back-btn" style="display: none;">‹ Back</button>
           <h2 id="sheet-title">My Profile</h2>
           <button type="button" id="close-profile-btn" class="ios-close-btn">Done</button>
         </div>
 
         <div class="sheet-body">
           
-          <!-- SUB-VIEW 1: DIGITAL CARD PREVIEW (DEFAULT IN PROFILE) -->
+          <!-- SUB-VIEW 1: DIGITAL CARD PREVIEW -->
           <div id="profile-card-subview" class="subview active-subview">
             <div class="namedrop-card" id="digital-card">
               <div class="card-avatar-wrapper">
@@ -154,13 +182,11 @@
               <h2 id="card-name" class="card-name">Your Name</h2>
               <p id="card-title" class="card-title">Role / Headline</p>
 
-              <!-- Saved Contact Details -->
               <div class="card-links" id="card-links">
                 <!-- Dynamically populated -->
               </div>
             </div>
 
-            <!-- Profile Action Buttons -->
             <div class="profile-actions-stack">
               <button type="button" id="goto-edit-profile-btn" class="ios-action-btn primary-action">
                 ✏️ Edit Profile Details
@@ -172,11 +198,10 @@
             </div>
           </div>
 
-          <!-- SUB-VIEW 2: EDIT PROFILE FORM (HIDDEN UNTIL CLICKED) -->
+          <!-- SUB-VIEW 2: EDIT PROFILE FORM -->
           <div id="profile-edit-subview" class="subview">
             <form id="profile-form">
               
-              <!-- Avatar Edit -->
               <div class="ios-avatar-section">
                 <div class="avatar-uploader">
                   <div class="avatar-preview-circle" id="form-avatar-preview">
@@ -228,17 +253,12 @@
                 </div>
               </div>
 
-              <!-- Custom Links Section -->
               <div class="custom-links-header">
                 <span class="ios-section-label">CUSTOM EXTRA LINKS</span>
-                <button type="button" id="add-custom-field-btn" class="add-field-btn">
-                  ➕ Add Link
-                </button>
+                <button type="button" id="add-custom-field-btn" class="add-field-btn">➕ Add Link</button>
               </div>
               
-              <div id="custom-fields-container" class="ios-inset-group" style="display: none;">
-                <!-- Dynamically added links -->
-              </div>
+              <div id="custom-fields-container" class="ios-inset-group" style="display: none;"></div>
 
               <div class="btn-container">
                 <button type="submit" id="save-profile-btn" class="ios-action-btn primary-action">
@@ -248,36 +268,24 @@
             </form>
           </div>
 
-          <!-- SUB-VIEW 3: CONFIGURE WORK & SOCIAL MODES & ADD SECTIONS -->
+          <!-- SUB-VIEW 3: CONFIGURE WORK & SOCIAL MODES -->
           <div id="mode-settings-subview" class="subview">
-            
             <p class="settings-helper-text">
               Choose which details to include in each mode when someone scans your QR code:
             </p>
 
-            <!-- Mode 1: Work Configuration -->
             <div class="ios-section-label">💼 IN WORK MODE, SHARE:</div>
-            <div class="ios-inset-group" id="work-items-list">
-              <!-- Dynamically rendered checkboxes -->
-            </div>
+            <div class="ios-inset-group" id="work-items-list"></div>
 
-            <!-- Mode 2: Social Configuration -->
             <div class="ios-section-label">🎉 IN SOCIAL MODE, SHARE:</div>
-            <div class="ios-inset-group" id="social-items-list">
-              <!-- Dynamically rendered checkboxes -->
-            </div>
+            <div class="ios-inset-group" id="social-items-list"></div>
 
-            <!-- Add New Custom Mode / Section -->
             <div class="custom-links-header" style="margin-top: 24px;">
               <span class="ios-section-label">CUSTOM SECTIONS / MODES</span>
-              <button type="button" id="add-custom-mode-btn" class="add-field-btn">
-                ➕ Add Section
-              </button>
+              <button type="button" id="add-custom-mode-btn" class="add-field-btn">➕ Add Section</button>
             </div>
             
-            <div id="custom-modes-container" class="custom-modes-list">
-              <!-- Dynamic custom modes -->
-            </div>
+            <div id="custom-modes-container" class="custom-modes-list"></div>
 
             <div class="btn-container">
               <button type="button" id="save-modes-btn" class="ios-action-btn primary-action">
@@ -286,24 +294,6 @@
             </div>
           </div>
 
-        </div>
-      </div>
-    </div>
-
-    <!-- Scanned Result Modal -->
-    <div id="scan-result-modal" class="sheet-overlay">
-      <div class="sheet-modal scan-result-sheet">
-        <div class="sheet-grabber"></div>
-        <div class="sheet-header">
-          <h2>🎉 Contact Detected</h2>
-          <button type="button" id="close-scan-result-btn" class="ios-close-btn">Close</button>
-        </div>
-        <div class="sheet-body scan-result-body">
-          <div class="avatar result-avatar" id="scanned-avatar">👤</div>
-          <h3 id="scanned-name">Rahul Sharma</h3>
-          <p id="scanned-detail" class="scanned-meta">+91 9876543210</p>
-          
-          <div id="scanned-actions-container" class="scanned-actions"></div>
         </div>
       </div>
     </div>

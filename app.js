@@ -1,6 +1,6 @@
 /**
  * ========================================================
- *  QUICKSWAP - APPLE iOS PROFILE HUB & PAYTM SCANNER ENGINE
+ *  QUICKSWAP - APPLE iOS PROFILE HUB & DIRECT LINK ENGINE
  * ========================================================
  */
 
@@ -19,7 +19,6 @@ let userProfile = {
   customLinks: [] // [{ label: 'GitHub', value: '...' }]
 };
 
-// Mode configuration: which fields belong to each mode
 let modeConfigs = {
   work: {
     title: 'Work Contact QR',
@@ -35,10 +34,8 @@ let modeConfigs = {
   }
 };
 
-// Custom user created modes (e.g. College, Gaming)
-let customModes = []; // [{ id: 'gaming', name: 'Gaming', fields: ['instagram'] }]
-
-let activeSharingMode = 'work'; // Currently selected mode on the My QR screen
+let customModes = [];
+let activeSharingMode = 'work';
 
 let html5QrScanner = null;
 let isCameraActive = false;
@@ -47,7 +44,19 @@ let qrCodeInstance = null;
 // ==========================================
 // 2. DOM ELEMENTS
 // ==========================================
-// Main View Nav
+// Views
+const publicLandingView = document.getElementById('public-landing-view');
+const ownerAppContainer = document.getElementById('owner-app-container');
+
+// Public Landing Page Elements
+const publicAvatar = document.getElementById('public-avatar');
+const publicName = document.getElementById('public-name');
+const publicTitle = document.getElementById('public-title');
+const publicBadge = document.getElementById('public-badge');
+const publicActionsList = document.getElementById('public-actions-list');
+const publicDownloadVcfBtn = document.getElementById('public-download-vcf-btn');
+
+// Main Owner Navigation
 const navBtnScanner = document.getElementById('nav-btn-scanner');
 const navBtnMyQr = document.getElementById('nav-btn-myqr');
 const scannerView = document.getElementById('scanner-view');
@@ -61,7 +70,7 @@ const headerAvatarCircle = document.getElementById('header-avatar-circle');
 const sheetTitle = document.getElementById('sheet-title');
 const sheetBackBtn = document.getElementById('sheet-back-btn');
 
-// Subviews inside Profile Sheet
+// Profile Sheet Subviews
 const profileCardSubview = document.getElementById('profile-card-subview');
 const profileEditSubview = document.getElementById('profile-edit-subview');
 const modeSettingsSubview = document.getElementById('mode-settings-subview');
@@ -85,7 +94,7 @@ const linkedinInput = document.getElementById('linkedin');
 const customFieldsContainer = document.getElementById('custom-fields-container');
 const addCustomFieldBtn = document.getElementById('add-custom-field-btn');
 
-// Mode Settings View Elements
+// Mode Settings Elements
 const workItemsList = document.getElementById('work-items-list');
 const socialItemsList = document.getElementById('social-items-list');
 const customModesContainer = document.getElementById('custom-modes-container');
@@ -103,7 +112,7 @@ const modeChipsContainer = document.getElementById('mode-chips-container');
 const currentModeTitle = document.getElementById('current-mode-title');
 const currentModeSummary = document.getElementById('current-mode-summary');
 const qrcodeDiv = document.getElementById('qrcode');
-const downloadVcfBtn = document.getElementById('download-vcf-btn');
+const testLinkBtn = document.getElementById('test-link-btn');
 const peekProfileBtn = document.getElementById('peek-profile-btn');
 
 // Camera & Scanner Elements
@@ -112,15 +121,266 @@ const cameraBtnText = document.getElementById('camera-btn-text');
 const qrFileInput = document.getElementById('qr-file-input');
 const laserLine = document.getElementById('laser-line');
 
-// Scanned Result Modal
-const scanResultModal = document.getElementById('scan-result-modal');
-const closeScanResultBtn = document.getElementById('close-scan-result-btn');
-const scannedName = document.getElementById('scanned-name');
-const scannedDetail = document.getElementById('scanned-detail');
-const scannedActionsContainer = document.getElementById('scanned-actions-container');
+// Variable to store current scanned contact payload for vCard export
+let currentScannedPayload = null;
 
 // ==========================================
-// 3. MAIN NAVIGATION: [ SCANNER ] vs [ MY QR ]
+// 3. CHECK FOR SHARED CONTACT VIA URL HASH (#data=)
+// ==========================================
+function checkUrlForSharedContact() {
+  if (window.location.hash.startsWith('#data=')) {
+    const rawData = window.location.hash.substring(6);
+    try {
+      const decodedJson = decodeURIComponent(escape(atob(decodeURIComponent(rawData))));
+      const sharedContact = JSON.parse(decodedJson);
+      renderPublicLandingPage(sharedContact);
+      return true;
+    } catch (e) {
+      console.error("Failed to parse shared contact URL:", e);
+    }
+  }
+  return false;
+}
+
+// ==========================================
+// 4. RENDER PUBLIC LANDING PAGE (Direct Click Links!)
+// ==========================================
+function renderPublicLandingPage(data) {
+  currentScannedPayload = data;
+
+  // Hide owner app, show public landing page
+  ownerAppContainer.style.display = 'none';
+  publicLandingView.style.display = 'block';
+
+  // Name & Title
+  publicName.textContent = data.n || 'Contact Profile';
+  publicTitle.textContent = data.t || 'QuickSwap Member';
+
+  // Avatar
+  if (data.a) {
+    publicAvatar.innerHTML = `<img src="${data.a}" alt="Photo">`;
+  } else {
+    const initial = (data.n || '⚡').charAt(0).toUpperCase();
+    publicAvatar.innerHTML = `<span>${initial}</span>`;
+  }
+
+  // Mode Badge
+  publicBadge.textContent = data.m ? `${data.m.toUpperCase()} PROFILE` : 'SHARED PROFILE';
+
+  // DIRECT CLICK ACTION TILES
+  publicActionsList.innerHTML = '';
+
+  // 1. Instagram Direct Click
+  if (data.i) {
+    const cleanInsta = data.i.replace('@', '').trim();
+    publicActionsList.innerHTML += `
+      <a href="https://instagram.com/${cleanInsta}" target="_blank" rel="noopener noreferrer" class="action-tile">
+        <div class="action-tile-left">
+          <div class="action-tile-icon icon-bg-insta">📸</div>
+          <div class="action-tile-text">
+            <strong>Instagram</strong>
+            <span>@${cleanInsta} • Open Profile</span>
+          </div>
+        </div>
+        <span class="action-tile-arrow">↗</span>
+      </a>
+    `;
+  }
+
+  // 2. WhatsApp Direct Chat
+  if (data.w) {
+    const cleanWA = data.w.replace(/[^0-9]/g, '');
+    publicActionsList.innerHTML += `
+      <a href="https://wa.me/${cleanWA}" target="_blank" rel="noopener noreferrer" class="action-tile">
+        <div class="action-tile-left">
+          <div class="action-tile-icon icon-bg-wa">💬</div>
+          <div class="action-tile-text">
+            <strong>WhatsApp</strong>
+            <span>+${cleanWA} • Start Direct Chat</span>
+          </div>
+        </div>
+        <span class="action-tile-arrow">↗</span>
+      </a>
+    `;
+  }
+
+  // 3. Phone Call Direct Dialer
+  if (data.p) {
+    publicActionsList.innerHTML += `
+      <a href="tel:${data.p}" class="action-tile">
+        <div class="action-tile-left">
+          <div class="action-tile-icon icon-bg-phone">📞</div>
+          <div class="action-tile-text">
+            <strong>Phone Call</strong>
+            <span>${data.p} • Tap to Call</span>
+          </div>
+        </div>
+        <span class="action-tile-arrow">↗</span>
+      </a>
+    `;
+  }
+
+  // 4. Email Direct Mail
+  if (data.e) {
+    publicActionsList.innerHTML += `
+      <a href="mailto:${data.e}" class="action-tile">
+        <div class="action-tile-left">
+          <div class="action-tile-icon icon-bg-email">✉️</div>
+          <div class="action-tile-text">
+            <strong>Email</strong>
+            <span>${data.e} • Send Message</span>
+          </div>
+        </div>
+        <span class="action-tile-arrow">↗</span>
+      </a>
+    `;
+  }
+
+  // 5. LinkedIn Direct Profile
+  if (data.l) {
+    publicActionsList.innerHTML += `
+      <a href="${data.l}" target="_blank" rel="noopener noreferrer" class="action-tile">
+        <div class="action-tile-left">
+          <div class="action-tile-icon icon-bg-linkedin">💼</div>
+          <div class="action-tile-text">
+            <strong>LinkedIn</strong>
+            <span>View Professional Profile</span>
+          </div>
+        </div>
+        <span class="action-tile-arrow">↗</span>
+      </a>
+    `;
+  }
+
+  // 6. Custom Links (GitHub, Website, etc.)
+  if (data.c && Array.isArray(data.c)) {
+    data.c.forEach(item => {
+      if (item.v) {
+        publicActionsList.innerHTML += `
+          <a href="${item.v}" target="_blank" rel="noopener noreferrer" class="action-tile">
+            <div class="action-tile-left">
+              <div class="action-tile-icon icon-bg-custom">🔗</div>
+              <div class="action-tile-text">
+                <strong>${item.l || 'Custom Link'}</strong>
+                <span>Open ${item.l || 'Link'}</span>
+              </div>
+            </div>
+            <span class="action-tile-arrow">↗</span>
+          </a>
+        `;
+      }
+    });
+  }
+}
+
+// Download vCard from Public Landing Page
+publicDownloadVcfBtn.addEventListener('click', () => {
+  if (!currentScannedPayload) return;
+  const p = currentScannedPayload;
+
+  let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
+  vcard += `FN:${p.n || 'Contact'}\n`;
+  if (p.t) vcard += `TITLE:${p.t}\n`;
+  if (p.p) vcard += `TEL;TYPE=CELL:${p.p}\n`;
+  if (p.e) vcard += `EMAIL:${p.e}\n`;
+  if (p.w) vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${p.w.replace(/[^0-9]/g, '')}\n`;
+  if (p.i) vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${p.i.replace('@', '')}\n`;
+  if (p.l) vcard += `URL:${p.l}\n`;
+
+  if (p.c && Array.isArray(p.c)) {
+    p.c.forEach(item => {
+      if (item.v) vcard += `URL;TYPE=${item.l || 'Link'}:${item.v}\n`;
+    });
+  }
+
+  vcard += `END:VCARD`;
+
+  const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.setAttribute('download', `${(p.n || 'contact').replace(/\s+/g, '_')}.vcf`);
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  URL.revokeObjectURL(url);
+});
+
+// ==========================================
+// 5. GENERATE REAL WEB LINK QR CODE 🌐
+// ==========================================
+function getActiveModeFields() {
+  if (activeSharingMode === 'work') return { title: 'Work Contact QR', fields: modeConfigs.work.fields };
+  if (activeSharingMode === 'social') return { title: 'Social Contact QR', fields: modeConfigs.social.fields };
+  if (activeSharingMode === 'all') return { title: 'Complete Contact QR', fields: modeConfigs.all.fields };
+
+  const custom = customModes.find(m => m.id === activeSharingMode);
+  if (custom) return { title: `${custom.name} QR`, fields: custom.fields };
+
+  return { title: 'Contact QR', fields: [] };
+}
+
+function generateShareableWebUrl() {
+  const modeInfo = getActiveModeFields();
+
+  // Create lightweight payload of active fields only
+  const payload = {
+    m: activeSharingMode,
+    n: userProfile.name || '',
+    t: userProfile.title || ''
+  };
+
+  if (modeInfo.fields.includes('phone') && userProfile.phone) payload.p = userProfile.phone;
+  if (modeInfo.fields.includes('whatsapp') && userProfile.whatsapp) payload.w = userProfile.whatsapp;
+  if (modeInfo.fields.includes('instagram') && userProfile.instagram) payload.i = userProfile.instagram;
+  if (modeInfo.fields.includes('email') && userProfile.email) payload.e = userProfile.email;
+  if (modeInfo.fields.includes('linkedin') && userProfile.linkedin) payload.l = userProfile.linkedin;
+
+  // Custom links if in 'all' mode
+  if (activeSharingMode === 'all' && userProfile.customLinks.length > 0) {
+    payload.c = userProfile.customLinks.filter(x => x.value);
+  }
+
+  const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
+  
+  // Real URL that any camera can open
+  const baseUrl = window.location.href.split('#')[0];
+  return `${baseUrl}#data=${encodedData}`;
+}
+
+function renderSharingQr() {
+  if (!qrcodeDiv) return;
+
+  const modeInfo = getActiveModeFields();
+  currentModeTitle.textContent = modeInfo.title;
+
+  const activeFieldNames = modeInfo.fields
+    .map(k => availableFields.find(f => f.key === k)?.label.split(' ')[1] || k)
+    .join(', ');
+  currentModeSummary.textContent = activeFieldNames ? `Sharing: ${activeFieldNames}` : 'Nothing selected in this mode';
+
+  // Real Web URL into the QR Code!
+  const targetWebUrl = generateShareableWebUrl();
+
+  qrcodeDiv.innerHTML = '';
+  qrCodeInstance = new QRCode(qrcodeDiv, {
+    text: targetWebUrl,
+    width: 180,
+    height: 180,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// Preview own web card button
+testLinkBtn.addEventListener('click', () => {
+  const targetUrl = generateShareableWebUrl();
+  window.open(targetUrl, '_blank');
+});
+
+// ==========================================
+// 6. MAIN NAVIGATION: [ SCANNER ] vs [ MY QR ]
 // ==========================================
 function switchMainView(view) {
   if (view === 'scanner') {
@@ -144,7 +404,7 @@ navBtnScanner.addEventListener('click', () => switchMainView('scanner'));
 navBtnMyQr.addEventListener('click', () => switchMainView('myqr'));
 
 // ==========================================
-// 4. PROFILE SHEET NAVIGATION & SUBVIEWS
+// 7. PROFILE DRAWER NAVIGATION & SUBVIEWS
 // ==========================================
 function openProfileSheet(subview = 'card') {
   profileSheetOverlay.classList.add('active');
@@ -153,7 +413,6 @@ function openProfileSheet(subview = 'card') {
 
 function closeProfileSheet() {
   profileSheetOverlay.classList.remove('active');
-  // Reset back to card view for next time
   setTimeout(() => switchProfileSubview('card'), 300);
 }
 
@@ -166,7 +425,6 @@ profileSheetOverlay.addEventListener('click', (e) => {
 });
 
 function switchProfileSubview(subview) {
-  // Hide all subviews
   profileCardSubview.classList.remove('active-subview');
   profileEditSubview.classList.remove('active-subview');
   modeSettingsSubview.classList.remove('active-subview');
@@ -193,10 +451,9 @@ gotoModeSettingsBtn.addEventListener('click', () => switchProfileSubview('settin
 sheetBackBtn.addEventListener('click', () => switchProfileSubview('card'));
 
 // ==========================================
-// 5. DIGITAL CARD RENDERING (Screenshot Look!)
+// 8. DIGITAL CARD RENDERING (Screenshot Look!)
 // ==========================================
 function renderDigitalCard() {
-  // Avatar
   if (userProfile.avatar) {
     cardAvatar.innerHTML = `<img src="${userProfile.avatar}" alt="Avatar">`;
     headerAvatarCircle.innerHTML = `<img src="${userProfile.avatar}" alt="Avatar">`;
@@ -210,68 +467,37 @@ function renderDigitalCard() {
     removePhotoBtn.style.display = 'none';
   }
 
-  // Name & Title
   cardName.textContent = userProfile.name || 'Your Name';
   cardTitle.textContent = userProfile.title || 'Role / Headline';
 
-  // Saved Details
   cardLinks.innerHTML = '';
   let count = 0;
 
   if (userProfile.phone) {
     count++;
-    cardLinks.innerHTML += `
-      <div class="ios-link-pill">
-        <span>📞 Phone</span>
-        <strong>${userProfile.phone}</strong>
-      </div>`;
+    cardLinks.innerHTML += `<div class="ios-link-pill"><span>📞 Phone</span><strong>${userProfile.phone}</strong></div>`;
   }
-
   if (userProfile.whatsapp) {
     count++;
-    cardLinks.innerHTML += `
-      <div class="ios-link-pill">
-        <span>💬 WhatsApp</span>
-        <strong>${userProfile.whatsapp}</strong>
-      </div>`;
+    cardLinks.innerHTML += `<div class="ios-link-pill"><span>💬 WhatsApp</span><strong>${userProfile.whatsapp}</strong></div>`;
   }
-
   if (userProfile.instagram) {
     count++;
-    cardLinks.innerHTML += `
-      <div class="ios-link-pill">
-        <span>📸 Instagram</span>
-        <strong>@${userProfile.instagram.replace('@', '')}</strong>
-      </div>`;
+    cardLinks.innerHTML += `<div class="ios-link-pill"><span>📸 Instagram</span><strong>@${userProfile.instagram.replace('@', '')}</strong></div>`;
   }
-
   if (userProfile.email) {
     count++;
-    cardLinks.innerHTML += `
-      <div class="ios-link-pill">
-        <span>✉️ Email</span>
-        <strong>${userProfile.email}</strong>
-      </div>`;
+    cardLinks.innerHTML += `<div class="ios-link-pill"><span>✉️ Email</span><strong>${userProfile.email}</strong></div>`;
   }
-
   if (userProfile.linkedin) {
     count++;
-    cardLinks.innerHTML += `
-      <div class="ios-link-pill">
-        <span>💼 LinkedIn</span>
-        <strong>Connected</strong>
-      </div>`;
+    cardLinks.innerHTML += `<div class="ios-link-pill"><span>💼 LinkedIn</span><strong>Connected</strong></div>`;
   }
 
-  // Custom Extra Links
   userProfile.customLinks.forEach(link => {
     if (link.label && link.value) {
       count++;
-      cardLinks.innerHTML += `
-        <div class="ios-link-pill">
-          <span>🔗 ${link.label}</span>
-          <strong>${link.value}</strong>
-        </div>`;
+      cardLinks.innerHTML += `<div class="ios-link-pill"><span>🔗 ${link.label}</span><strong>${link.value}</strong></div>`;
     }
   });
 
@@ -281,7 +507,7 @@ function renderDigitalCard() {
 }
 
 // ==========================================
-// 6. EDIT PROFILE FORM & "+ ADD LINK"
+// 9. EDIT FORM & "+ ADD LINK"
 // ==========================================
 function renderCustomFields() {
   customFieldsContainer.innerHTML = '';
@@ -300,13 +526,9 @@ function renderCustomFields() {
       <button type="button" class="delete-row-btn">✕</button>
     `;
 
-    const labelInp = row.querySelector('.custom-label-input');
-    const valInp = row.querySelector('.custom-val-input');
-    const delBtn = row.querySelector('.delete-row-btn');
-
-    labelInp.addEventListener('input', (e) => userProfile.customLinks[index].label = e.target.value);
-    valInp.addEventListener('input', (e) => userProfile.customLinks[index].value = e.target.value);
-    delBtn.addEventListener('click', () => {
+    row.querySelector('.custom-label-input').addEventListener('input', (e) => userProfile.customLinks[index].label = e.target.value);
+    row.querySelector('.custom-val-input').addEventListener('input', (e) => userProfile.customLinks[index].value = e.target.value);
+    row.querySelector('.delete-row-btn').addEventListener('click', () => {
       userProfile.customLinks.splice(index, 1);
       renderCustomFields();
     });
@@ -320,7 +542,6 @@ addCustomFieldBtn.addEventListener('click', () => {
   renderCustomFields();
 });
 
-// Photo Upload
 avatarInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -339,7 +560,6 @@ removePhotoBtn.addEventListener('click', () => {
   renderDigitalCard();
 });
 
-// Save Profile Form
 profileForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
@@ -355,13 +575,12 @@ profileForm.addEventListener('submit', (e) => {
   renderDigitalCard();
   renderSharingQr();
 
-  // Return to card view
   switchProfileSubview('card');
   alert('Profile updated successfully! ✨');
 });
 
 // ==========================================
-// 7. CONFIGURE WORK & SOCIAL MODES & SECTIONS
+// 10. CONFIGURE WORK & SOCIAL MODES
 // ==========================================
 const availableFields = [
   { key: 'phone', label: '📞 Phone Number' },
@@ -372,35 +591,26 @@ const availableFields = [
 ];
 
 function renderModeSettingsChecklists() {
-  // 1. Work checklist
   workItemsList.innerHTML = '';
   availableFields.forEach(f => {
     const isChecked = modeConfigs.work.fields.includes(f.key);
     workItemsList.innerHTML += `
       <div class="mode-checkbox-row">
-        <label for="work-${f.key}">
-          <span>${f.label}</span>
-        </label>
-        <input type="checkbox" id="work-${f.key}" data-mode="work" data-field="${f.key}" ${isChecked ? 'checked' : ''}>
-      </div>
-    `;
+        <label for="work-${f.key}"><span>${f.label}</span></label>
+        <input type="checkbox" id="work-${f.key}" data-field="${f.key}" ${isChecked ? 'checked' : ''}>
+      </div>`;
   });
 
-  // 2. Social checklist
   socialItemsList.innerHTML = '';
   availableFields.forEach(f => {
     const isChecked = modeConfigs.social.fields.includes(f.key);
     socialItemsList.innerHTML += `
       <div class="mode-checkbox-row">
-        <label for="social-${f.key}">
-          <span>${f.label}</span>
-        </label>
-        <input type="checkbox" id="social-${f.key}" data-mode="social" data-field="${f.key}" ${isChecked ? 'checked' : ''}>
-      </div>
-    `;
+        <label for="social-${f.key}"><span>${f.label}</span></label>
+        <input type="checkbox" id="social-${f.key}" data-field="${f.key}" ${isChecked ? 'checked' : ''}>
+      </div>`;
   });
 
-  // 3. Custom Modes List
   renderCustomModesList();
 }
 
@@ -418,26 +628,18 @@ function renderCustomModesList() {
         ${availableFields.map(f => `
           <div class="mode-checkbox-row">
             <label><span>${f.label}</span></label>
-            <input type="checkbox" data-custom-index="${index}" data-field="${f.key}" ${mode.fields.includes(f.key) ? 'checked' : ''}>
-          </div>
-        `).join('')}
+            <input type="checkbox" data-field="${f.key}" ${mode.fields.includes(f.key) ? 'checked' : ''}>
+          </div>`).join('')}
       </div>
     `;
 
-    // Listeners for custom mode name and checkboxes
-    const nameInp = card.querySelector('input[type="text"]');
-    nameInp.addEventListener('input', (e) => {
-      customModes[index].name = e.target.value;
-    });
-
-    const delBtn = card.querySelector('.delete-row-btn');
-    delBtn.addEventListener('click', () => {
+    card.querySelector('input[type="text"]').addEventListener('input', (e) => customModes[index].name = e.target.value);
+    card.querySelector('.delete-row-btn').addEventListener('click', () => {
       customModes.splice(index, 1);
       renderCustomModesList();
     });
 
-    const checks = card.querySelectorAll('input[type="checkbox"]');
-    checks.forEach(chk => {
+    card.querySelectorAll('input[type="checkbox"]').forEach(chk => {
       chk.addEventListener('change', (e) => {
         const field = e.target.dataset.field;
         if (e.target.checked) {
@@ -453,23 +655,16 @@ function renderCustomModesList() {
 }
 
 addCustomModeBtn.addEventListener('click', () => {
-  const newId = 'custom_' + Date.now();
-  customModes.push({
-    id: newId,
-    name: 'New Section',
-    fields: ['phone', 'instagram']
-  });
+  customModes.push({ id: 'custom_' + Date.now(), name: 'New Section', fields: ['phone', 'instagram'] });
   renderCustomModesList();
 });
 
 saveModesBtn.addEventListener('click', () => {
-  // Read work mode checkboxes
   modeConfigs.work.fields = [];
   document.querySelectorAll('#work-items-list input[type="checkbox"]:checked').forEach(c => {
     modeConfigs.work.fields.push(c.dataset.field);
   });
 
-  // Read social mode checkboxes
   modeConfigs.social.fields = [];
   document.querySelectorAll('#social-items-list input[type="checkbox"]:checked').forEach(c => {
     modeConfigs.social.fields.push(c.dataset.field);
@@ -482,23 +677,13 @@ saveModesBtn.addEventListener('click', () => {
   alert('Mode settings saved! ✨');
 });
 
-// ==========================================
-// 8. MY QR CODE VIEW & CHIPS ENGINE
-// ==========================================
 function renderModeChips() {
   modeChipsContainer.innerHTML = `
-    <button type="button" class="mode-chip ${activeSharingMode === 'work' ? 'active' : ''}" data-mode="work">
-      💼 Work
-    </button>
-    <button type="button" class="mode-chip ${activeSharingMode === 'social' ? 'active' : ''}" data-mode="social">
-      🎉 Social
-    </button>
-    <button type="button" class="mode-chip ${activeSharingMode === 'all' ? 'active' : ''}" data-mode="all">
-      ⚡ All
-    </button>
+    <button type="button" class="mode-chip ${activeSharingMode === 'work' ? 'active' : ''}" data-mode="work">💼 Work</button>
+    <button type="button" class="mode-chip ${activeSharingMode === 'social' ? 'active' : ''}" data-mode="social">🎉 Social</button>
+    <button type="button" class="mode-chip ${activeSharingMode === 'all' ? 'active' : ''}" data-mode="all">⚡ All</button>
   `;
 
-  // Custom mode chips
   customModes.forEach(m => {
     modeChipsContainer.innerHTML += `
       <button type="button" class="mode-chip ${activeSharingMode === m.id ? 'active' : ''}" data-mode="${m.id}">
@@ -507,9 +692,8 @@ function renderModeChips() {
     `;
   });
 
-  // Add click listeners to all chips
   modeChipsContainer.querySelectorAll('.mode-chip').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       activeSharingMode = btn.dataset.mode;
       renderModeChips();
       renderSharingQr();
@@ -517,92 +701,11 @@ function renderModeChips() {
   });
 }
 
-function getActiveModeFields() {
-  if (activeSharingMode === 'work') return { title: 'Work Contact QR', fields: modeConfigs.work.fields };
-  if (activeSharingMode === 'social') return { title: 'Social Contact QR', fields: modeConfigs.social.fields };
-  if (activeSharingMode === 'all') return { title: 'Complete Contact QR', fields: modeConfigs.all.fields };
-
-  const custom = customModes.find(m => m.id === activeSharingMode);
-  if (custom) return { title: `${custom.name} QR`, fields: custom.fields };
-
-  return { title: 'Contact QR', fields: [] };
-}
-
-function renderSharingQr() {
-  if (!qrcodeDiv) return;
-
-  const modeInfo = getActiveModeFields();
-  currentModeTitle.textContent = modeInfo.title;
-
-  const activeFieldNames = modeInfo.fields
-    .map(k => availableFields.find(f => f.key === k)?.label.split(' ')[1] || k)
-    .join(', ');
-  currentModeSummary.textContent = activeFieldNames ? `Sharing: ${activeFieldNames}` : 'Nothing selected in this mode';
-
-  // Build QR data
-  let qrData = `MECARD:N:${userProfile.name || 'User'};`;
-  if (modeInfo.fields.includes('phone') && userProfile.phone) qrData += `TEL:${userProfile.phone};`;
-  if (modeInfo.fields.includes('email') && userProfile.email) qrData += `EMAIL:${userProfile.email};`;
-  if (modeInfo.fields.includes('whatsapp') && userProfile.whatsapp) qrData += `NOTE:WhatsApp:${userProfile.whatsapp};`;
-  if (modeInfo.fields.includes('instagram') && userProfile.instagram) qrData += `URL:https://instagram.com/${userProfile.instagram.replace('@', '')};`;
-  if (modeInfo.fields.includes('linkedin') && userProfile.linkedin) qrData += `URL:${userProfile.linkedin};`;
-  qrData += `;`;
-
-  qrcodeDiv.innerHTML = '';
-  qrCodeInstance = new QRCode(qrcodeDiv, {
-    text: qrData,
-    width: 180,
-    height: 180,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-
-// Download vCard for current mode
-downloadVcfBtn.addEventListener('click', () => {
-  if (!userProfile.name) {
-    alert('Please enter your name in Profile!');
-    openProfileSheet('edit');
-    return;
-  }
-
-  const modeInfo = getActiveModeFields();
-
-  let vcard = `BEGIN:VCARD\nVERSION:3.0\n`;
-  vcard += `FN:${userProfile.name}\n`;
-  if (userProfile.title) vcard += `TITLE:${userProfile.title}\n`;
-
-  if (modeInfo.fields.includes('phone') && userProfile.phone) vcard += `TEL;TYPE=CELL:${userProfile.phone}\n`;
-  if (modeInfo.fields.includes('email') && userProfile.email) vcard += `EMAIL:${userProfile.email}\n`;
-  if (modeInfo.fields.includes('whatsapp') && userProfile.whatsapp) vcard += `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${userProfile.whatsapp.replace(/[^0-9]/g, '')}\n`;
-  if (modeInfo.fields.includes('instagram') && userProfile.instagram) vcard += `X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${userProfile.instagram.replace('@', '')}\n`;
-  if (modeInfo.fields.includes('linkedin') && userProfile.linkedin) vcard += `URL:${userProfile.linkedin}\n`;
-
-  if (userProfile.avatar && userProfile.avatar.includes('base64,')) {
-    const base64Data = userProfile.avatar.split('base64,')[1];
-    vcard += `PHOTO;ENCODING=b;TYPE=JPEG:${base64Data}\n`;
-  }
-  vcard += `END:VCARD`;
-
-  const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = url;
-  downloadLink.setAttribute('download', `${(userProfile.name || 'contact').replace(/\s+/g, '_')}_${activeSharingMode}.vcf`);
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-  URL.revokeObjectURL(url);
-});
-
 // ==========================================
-// 9. PAYTM CAMERA SCANNER ENGINE
+// 11. PAYTM CAMERA SCANNER ENGINE
 // ==========================================
 async function startCamera() {
-  if (!html5QrScanner) {
-    html5QrScanner = new Html5Qrcode("reader");
-  }
+  if (!html5QrScanner) html5QrScanner = new Html5Qrcode("reader");
 
   try {
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
@@ -610,13 +713,12 @@ async function startCamera() {
       { facingMode: "environment" },
       config,
       onScanSuccess,
-      (err) => {}
+      () => {}
     );
     isCameraActive = true;
     cameraBtnText.textContent = "🛑 Stop Camera";
     laserLine.style.display = "block";
   } catch (err) {
-    console.error(err);
     alert("Camera permission denied or camera not available.");
   }
 }
@@ -653,67 +755,30 @@ qrFileInput.addEventListener('change', async (e) => {
 
 function onScanSuccess(decodedText) {
   stopCamera();
-  const contact = parseScannedQr(decodedText);
 
-  scannedName.textContent = contact.name || "Scanned Contact";
-  scannedDetail.textContent = contact.phone || contact.email || contact.url || decodedText;
-
-  scannedActionsContainer.innerHTML = '';
-  if (contact.vcard) {
-    const blob = new Blob([contact.vcard], { type: 'text/vcard;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    scannedActionsContainer.innerHTML += `
-      <a href="${url}" download="${(contact.name || 'contact').replace(/\s+/g, '_')}.vcf" class="ios-action-btn apple-save-btn">
-        📥 Save to Contacts (.vcf)
-      </a>`;
-  } else if (contact.phone) {
-    scannedActionsContainer.innerHTML += `
-      <a href="tel:${contact.phone}" class="ios-action-btn primary-action">
-        📞 Call ${contact.phone}
-      </a>`;
+  // If scanned text is a QuickSwap Web Card with hash data!
+  if (decodedText.includes('#data=')) {
+    const hash = decodedText.split('#data=')[1];
+    try {
+      const decodedJson = decodeURIComponent(escape(atob(decodeURIComponent(hash))));
+      const sharedContact = JSON.parse(decodedJson);
+      renderPublicLandingPage(sharedContact);
+      return;
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  if (contact.url) {
-    scannedActionsContainer.innerHTML += `
-      <a href="${contact.url}" target="_blank" class="ios-action-btn ios-pill-btn secondary">
-        🌐 Open Link
-      </a>`;
-  }
-
-  scanResultModal.classList.add('active');
-}
-
-closeScanResultBtn.addEventListener('click', () => scanResultModal.classList.remove('active'));
-
-function parseScannedQr(text) {
-  let contact = { name: '', phone: '', email: '', url: '', vcard: '' };
-  if (text.startsWith('BEGIN:VCARD')) {
-    contact.vcard = text;
-    const fnMatch = text.match(/FN:(.+)/);
-    if (fnMatch) contact.name = fnMatch[1].trim();
-    const telMatch = text.match(/TEL.*:(.+)/);
-    if (telMatch) contact.phone = telMatch[1].trim();
-  } else if (text.startsWith('MECARD:')) {
-    const nMatch = text.match(/N:([^;]+)/);
-    if (nMatch) contact.name = nMatch[1];
-    const telMatch = text.match(/TEL:([^;]+)/);
-    if (telMatch) contact.phone = telMatch[1];
-    const emailMatch = text.match(/EMAIL:([^;]+)/);
-    if (emailMatch) contact.email = emailMatch[1];
-  } else if (text.startsWith('http')) {
-    contact.url = text;
-    contact.name = "Web Link";
-  } else if (/^\+?[0-9\s-]{7,15}$/.test(text.trim())) {
-    contact.phone = text.trim();
-    contact.name = "Phone Number";
+  // Fallback if someone scanned standard text/url
+  if (decodedText.startsWith('http')) {
+    window.open(decodedText, '_blank');
   } else {
-    contact.name = "QR Information";
+    alert("Scanned info: " + decodedText);
   }
-  return contact;
 }
 
 // ==========================================
-// 10. LOCALSTORAGE PERSISTENCE
+// 12. LOCALSTORAGE PERSISTENCE & INIT
 // ==========================================
 function saveToLocalStorage() {
   localStorage.setItem('quickswap_profile', JSON.stringify(userProfile));
@@ -722,6 +787,11 @@ function saveToLocalStorage() {
 }
 
 function loadSavedData() {
+  // First check if user opened a shared link!
+  if (checkUrlForSharedContact()) {
+    return; // Show public landing page directly!
+  }
+
   const savedProfile = localStorage.getItem('quickswap_profile');
   const savedModes = localStorage.getItem('quickswap_modes');
   const savedCustomModes = localStorage.getItem('quickswap_custom_modes');
@@ -741,18 +811,13 @@ function loadSavedData() {
     renderCustomFields();
   }
 
-  if (savedModes) {
-    modeConfigs = JSON.parse(savedModes);
-  }
-
-  if (savedCustomModes) {
-    customModes = JSON.parse(savedCustomModes);
-  }
+  if (savedModes) modeConfigs = JSON.parse(savedModes);
+  if (savedCustomModes) customModes = JSON.parse(savedCustomModes);
 
   renderDigitalCard();
   renderModeChips();
   renderSharingQr();
 }
 
-// Launch
+// Initialize on launch
 loadSavedData();
